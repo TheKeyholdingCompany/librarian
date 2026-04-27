@@ -393,6 +393,93 @@ Other built-in converters: `<string:>`, `<float:>`, `<uuid:>`, `<path:>` (allows
 
 `abort(404)` short-circuits the request and returns a 404 response. You can customize 404 pages later with an `@app.errorhandler(404)`.
 
+### Walkthrough — the mock login
+
+The project ships with a small login system you don't need to type in. Read the code in `app/routes.py` and `app/templates/login.html` — this section explains what's going on so you can copy the patterns into features of your own.
+
+**Try it first:** visit <http://localhost:5000/>. The home page is gated, so Flask redirects you to `/login`. Log in with one of:
+
+| Username   | Password   | Role     |
+| ---------- | ---------- | -------- |
+| `borrower` | `borrower` | borrower |
+| `admin`    | `admin`    | admin    |
+
+After logging in you land back on the home page with your username in the top-right. Admins also see an "Admin" link to `/admin`; borrowers who type that URL directly get a `403 Forbidden` (they're already authenticated, just not authorized — re-logging-in won't help).
+
+`/health` is intentionally **not** gated: health checks need to work without credentials so Docker, Kubernetes, or load balancers can ping it. As a rule of thumb, public-by-default routes are: login, signup, password reset, health checks, and any landing page meant to be findable on the web.
+
+#### What `flask.session` is
+
+```python
+from flask import session
+
+session["username"] = "admin"      # writes
+session.get("username")            # reads
+session.clear()                    # logout
+```
+
+`session` looks like a dictionary, but Flask actually stores it in a **signed cookie** sent to the browser. "Signed" means Flask appends a cryptographic signature (using your `SECRET_KEY`) — the user can read the cookie's contents but can't modify them without invalidating the signature. That's why we can safely store the role there: a borrower can't flip `role: borrower` to `role: admin` and re-submit it.
+
+If you ever change `SECRET_KEY`, every existing session becomes invalid and all users are logged out. That's a feature, not a bug.
+
+#### The `@login_required` decorator
+
+```python
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if "username" not in session:
+            return redirect(url_for("main.login"))
+        return view(*args, **kwargs)
+    return wrapped
+```
+
+Read it as: *"wrap the view function so it first checks the session, and only runs the original view if a user is logged in."* The pattern lets you protect any route by adding one line:
+
+```python
+@bp.route("/profile")
+@login_required           # add this line
+def profile():
+    ...
+```
+
+Order matters: `@bp.route` must be the *outermost* decorator (the last one applied), because it needs to register the *fully wrapped* function with Flask. If you put `@login_required` above `@bp.route`, Flask will register the unwrapped view and the auth check is skipped.
+
+`@admin_required` works the same way but checks `session["role"]`. You can stack them — `@login_required` then `@admin_required` — but `@admin_required` already implies a logged-in user (no role means no admin).
+
+#### Why `@wraps(view)`?
+
+Without it, the wrapped function loses its real name (`profile`, `admin`, ...) and becomes `wrapped` everywhere — confusing in tracebacks and breaking Flask's own URL building (Flask uses `view.__name__` to register routes). `functools.wraps` copies the original function's metadata onto the wrapper. Always use it when writing decorators.
+
+#### How the password "check" works
+
+```python
+USERS = {
+    "borrower": {"password": "borrower", "role": "borrower"},
+    "admin":    {"password": "admin",    "role": "admin"},
+}
+
+user = USERS.get(username)
+if user is not None and user["password"] == password:
+    session["username"] = username
+    session["role"] = user["role"]
+```
+
+This is **deliberately fake**. A real app must:
+
+1. Store users in the database (a `User` model), not a Python dict.
+2. Never store plaintext passwords. Hash them with a slow algorithm like `bcrypt` or `argon2` (via `passlib` or `werkzeug.security.generate_password_hash`).
+3. Compare hashes with a constant-time function (`werkzeug.security.check_password_hash`) to avoid timing attacks.
+
+When you're ready, swap the `USERS` dict for a SQLAlchemy model and the `==` check for a hash comparison — every other line in this file stays the same. That's the value of keeping the mock structure realistic.
+
+#### Things to try
+
+- Add a route like `/dashboard` and protect it with `@login_required`. Log out, visit it directly, and watch the redirect.
+- Make a borrower-friendly page that hides certain sections in the template using `{% if session['role'] == 'admin' %}...{% endif %}`.
+- Break it on purpose: open dev tools → Application → Cookies, copy the `session` cookie value, then change one character in it. Reload the page. Flask will silently discard the cookie because the signature no longer matches, and you'll be logged out — proof that signing works.
+- **Stretch:** implement a `?next=` parameter so that after logging in, users land back on the page they originally tried to visit. Tricky bit: validate that `next` points to your own site before redirecting — otherwise an attacker can craft a link like `/login?next=https://evil.com` that phishes your users. Hint: `urlparse(next).netloc` should be empty (relative URL) or match `request.host`.
+
 ### Where to go next
 
 - **Forms with validation:** install `Flask-WTF` for CSRF protection and declarative form classes.
