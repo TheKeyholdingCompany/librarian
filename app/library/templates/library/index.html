@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}TKC Library{% endblock %}
+
+{% block extra_styles %}
+<style>
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .session {
+    font-size: 0.9rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .session strong { color: var(--text); }
+  .session button {
+    color: var(--brand);
+    background: none;
+    border: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+  }
+  .session button:hover { text-decoration: underline; }
+  h1 { margin-top: 0; margin-bottom: 0.25rem; }
+  ul { padding-left: 1.25rem; }
+  li { margin-bottom: 0.25rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <header>
+    <div class="brand">TKC Library</div>
+    <div class="session">
+      {% if session.get('username') %}
+        Logged in as <strong>{{ session['username'] }}</strong> ({{ session['role'] }})
+        {% if session['role'] == 'admin' %}
+          · <a href="{{ url_for('admin.dashboard') }}">Admin</a>
+        {% endif %}
+        ·
+        <form method="POST" action="{{ url_for('auth.logout') }}" style="display:inline">
+          <button type="submit">Log out</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}">Log in</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="card">
+    <h1>TKC Library</h1>
+    <p class="muted">Flask + PostgreSQL is running.</p>
+
+    <h2>Items</h2>
+    {% if items %}
+      <ul>
+        {% for item in items %}
+          <li>{{ item.name }} <span class="muted">({{ item.created_at.strftime('%Y-%m-%d') }})</span></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No items yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

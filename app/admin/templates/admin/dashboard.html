@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Admin — TKC Library{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .brand { margin-bottom: 1.5rem; }
+  .card { padding: 2rem; }
+  h1 { margin-top: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="brand">TKC Library</div>
+  <div class="card">
+    <h1>Admin dashboard</h1>
+    <p>Hi <strong>{{ session['username'] }}</strong> — you have admin access.</p>
+    <p class="muted">This page is only visible to users with the <code>admin</code> role. Borrowers who try to visit it get a <code>403 Forbidden</code>.</p>
+    <p><a href="{{ url_for('library.index') }}">← Back home</a></p>
+  </div>
+</div>
+{% endblock %}

@@ -11,8 +11,12 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
 
-    from app.routes import bp as main_bp
-    app.register_blueprint(main_bp)
+    from app.auth import bp as auth_bp
+    from app.library import bp as library_bp
+    from app.admin import bp as admin_bp
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(library_bp)
+    app.register_blueprint(admin_bp)
 
     from app import models  # noqa: F401  ensure models are registered with SQLAlchemy
 
