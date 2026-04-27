@@ -137,9 +137,97 @@ db:       tkc_library
 
 ---
 
-## Flask tutorial (for Python devs new to Flask)
+## Web 101 for Python folks
 
-This section assumes you're comfortable with Python but haven't built a Flask app before. Each step modifies files already in this project — copy, paste, save, refresh the browser.
+If you've only written Python *scripts* (a file you run with `python foo.py` that prints something and exits), the Flask tutorial below will use a handful of words you may not have a mental model for yet. This section gives you that model in ~5 minutes. **Skip it if you've already built websites in any language.**
+
+### Clients, servers, and HTTP
+
+A normal Python script runs top-to-bottom and exits. A *web server* is the opposite: it's a program that **starts up and waits forever**, doing nothing until something asks it for a page. That "something" is usually a browser.
+
+The conversation looks like this:
+
+```
+Browser  ──── "GET /about HTTP/1.1" ───▶  Server (your Flask app)
+Browser  ◀─── "200 OK\n\n<html>..."  ───  Server
+```
+
+- **Request:** the browser sends a short text message saying *which URL it wants* (`/about`) and *what it wants to do* (`GET` = read, `POST` = submit data).
+- **Response:** your server sends back a status code (`200` = ok, `404` = not found, `500` = your code crashed) plus the page contents.
+
+This is **HTTP**. Every page load, every form submission, every API call — same pattern.
+
+### Why `flask run` doesn't return your terminal
+
+Because the server has to keep waiting for the next request. That's the job. Hit `Ctrl+C` to stop it. While it's running, every browser request causes Flask to call one of your Python functions, get the return value, and send it back. Your script-shaped intuition ("function returns → program ends") doesn't apply: in a server, your functions are called *over and over*, once per request.
+
+In debug mode (`flask run --debug`), Flask also watches your `.py` files and restarts the process when you save — that's why edits "just work" without you stopping and starting it.
+
+### Decorators in 60 seconds
+
+You'll see this everywhere in Flask:
+
+```python
+@bp.route("/about")
+def about():
+    return "hello"
+```
+
+The `@bp.route("/about")` line is a **decorator**. It's exactly equivalent to:
+
+```python
+def about():
+    return "hello"
+about = bp.route("/about")(about)
+```
+
+Read it as: *"register this function as the handler for `/about`"*. The decorator doesn't change what `about()` does — it just **tells Flask the function exists** and which URL should call it. If you delete the `@bp.route(...)` line, the function still works as a plain Python function; Flask just won't know to call it for any URL.
+
+### HTML and forms, just enough
+
+**HTML** is the text format browsers render as a page. Tags wrap content: `<h1>Hi</h1>` becomes a heading, `<p>...</p>` becomes a paragraph. You don't need to memorize tags — copy from the tutorial and adjust.
+
+A **form** is the standard way for a browser to send data *to* your server:
+
+```html
+<form method="POST" action="/items">
+  <input type="text" name="name" />
+  <button type="submit">Save</button>
+</form>
+```
+
+When the user clicks the button:
+
+1. The browser collects every `<input>` inside the form, keyed by its `name` attribute.
+2. It sends a `POST` request to the URL in `action=` with that data attached.
+3. Flask gives your view function access to the data via `request.form["name"]`.
+
+The `name="..."` attribute is the *only* link between the HTML field and the Python code — get it wrong and `request.form` won't have your value. This is the most common beginner bug.
+
+### Databases in 90 seconds
+
+A **relational database** (PostgreSQL, in our case) stores data in **tables**. A table is conceptually a spreadsheet:
+
+| id | name        | created_at          |
+| -- | ----------- | ------------------- |
+| 1  | First book  | 2026-04-27 10:30:00 |
+| 2  | Second book | 2026-04-27 10:31:00 |
+
+- Each **row** is one record (one book, one user, one order).
+- Each **column** has a fixed type (`integer`, `text`, `timestamp`, …).
+- The **primary key** (almost always called `id`) is a column whose value is unique for every row. It's how you say "give me the row that *is* this thing" rather than "give me rows where the name happens to be 'X'".
+
+You normally talk to the database in **SQL** (`SELECT * FROM items WHERE id = 1`), but in this project we use an **ORM** (SQLAlchemy) that lets you write Python instead and turns it into SQL behind the scenes. So `db.session.get(Item, 1)` *becomes* roughly `SELECT * FROM items WHERE id = 1` when it actually runs.
+
+One last concept: **transactions**. When you create or change rows, the change isn't saved until you call `db.session.commit()`. Until then, it's pending — visible to your code but not actually written. If anything goes wrong before the commit, calling `db.session.rollback()` (or just letting the request fail) throws away the pending changes. This means a half-finished operation can never leave the database in a partial state.
+
+That's the whole conceptual stack you need. On to building.
+
+---
+
+## Flask tutorial
+
+If you skipped "Web 101" above and haven't done any web programming before, scroll back up — this section assumes you know what HTTP, HTML forms, and database rows are. Each step modifies files already in this project — copy, paste, save, refresh the browser.
 
 ### The 60-second mental model
 
