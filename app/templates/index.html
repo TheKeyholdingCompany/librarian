@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>tkc-library</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+      h1 { margin-bottom: 0.25rem; }
+      .muted { color: #666; }
+      ul { padding-left: 1.25rem; }
+    </style>
+  </head>
+  <body>
+    <h1>tkc-library</h1>
+    <p class="muted">Flask + PostgreSQL is running.</p>
+
+    <h2>Items</h2>
+    {% if items %}
+      <ul>
+        {% for item in items %}
+          <li>{{ item.name }} <span class="muted">({{ item.created_at.strftime('%Y-%m-%d') }})</span></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No items yet.</p>
+    {% endif %}
+  </body>
+</html>

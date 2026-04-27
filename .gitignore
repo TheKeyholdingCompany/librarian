@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Env
+.env
+.env.local
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Flask
+instance/
