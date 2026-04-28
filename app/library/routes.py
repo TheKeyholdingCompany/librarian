@@ -3,14 +3,14 @@ from flask import render_template
 from app.auth import login_required
 from app.extensions import db
 from app.library import bp
-from app.models import Item
+from app.models import Book
 
 
 @bp.route("/")
 @login_required
 def index():
-    items = db.session.scalars(db.select(Item).order_by(Item.created_at.desc())).all()
-    return render_template("library/index.html", items=items)
+    books = db.session.scalars(db.select(Book).order_by(Book.created_at.desc())).all()
+    return render_template("library/index.html", books=books)
 
 
 @bp.route("/health")

@@ -1,0 +1,54 @@
+services:
+  db-zero:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tkc_library
+    ports:
+      - "5020:5432"
+    volumes:
+      - postgres_data_zero:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tkc_library"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  db-one:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tkc_library
+    ports:
+      - "5021:5432"
+    volumes:
+      - postgres_data_one:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tkc_library"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  db-two:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tkc_library
+    ports:
+      - "5022:5432"
+    volumes:
+      - postgres_data_two:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tkc_library"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_zero:
+  postgres_data_one:
+  postgres_data_two:

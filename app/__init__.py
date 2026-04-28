@@ -14,9 +14,11 @@ def create_app(config_class=Config):
     from app.auth import bp as auth_bp
     from app.library import bp as library_bp
     from app.admin import bp as admin_bp
+    from app.about import bp as about_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(library_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(about_bp)
 
     from app import models  # noqa: F401  ensure models are registered with SQLAlchemy
 
