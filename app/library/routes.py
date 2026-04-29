@@ -1,17 +1,28 @@
-from flask import render_template, redirect, url_for
+from flask import render_template, redirect, url_for, session, flash
 
 from app.auth import login_required
 from app.extensions import db
 from app.forms import BookForm
 from app.library import bp
-from app.models import Book
+from app.models import Book, Borrow, User
 
 
 @bp.route("/")
 @login_required
 def index():
     books = db.session.scalars(db.select(Book).order_by(Book.created_at.desc())).all()
-    return render_template("library/index.html", books=books)
+    
+    # Get borrow status for each book
+    book_status = {}
+    for book in books:
+        active_borrow = db.session.scalars(
+            db.select(Borrow).where(
+                (Borrow.book_id == book.id) & (Borrow.returned_at == None)
+            )
+        ).first()
+        book_status[book.id] = active_borrow
+    
+    return render_template("library/index.html", books=books, book_status=book_status)
 
 
 @bp.route("/health")
@@ -31,3 +42,42 @@ def add_book():
         db.session.commit()
         return redirect(url_for("library.index"))
     return render_template("library/add_book.html", form=form)
+
+
+@bp.route("/<int:book_id>/borrow", methods=["POST"])
+@login_required
+def borrow_book(book_id):
+    book = db.session.get(Book, book_id)
+    if not book:
+        flash("Book not found.", "error")
+        return redirect(url_for("library.index"))
+    
+    # Get or create user from session username
+    username = session.get("username")
+    if not username:
+        flash("You must be logged in to borrow a book.", "error")
+        return redirect(url_for("auth.login"))
+    
+    user = db.session.scalars(db.select(User).where(User.username == username)).first()
+    if not user:
+        flash("User account not found.", "error")
+        return redirect(url_for("library.index"))
+    
+    # Check if book is already borrowed
+    active_borrow = db.session.scalars(
+        db.select(Borrow).where(
+            (Borrow.book_id == book_id) & (Borrow.returned_at == None)
+        )
+    ).first()
+    
+    if active_borrow:
+        flash(f"This book is already borrowed by {active_borrow.user.username}.", "info")
+        return redirect(url_for("library.index"))
+    
+    # Create borrow record
+    borrow = Borrow(book_id=book_id, user_id=user.id)
+    db.session.add(borrow)
+    db.session.commit()
+    
+    flash(f"You've borrowed '{book.name}'!", "success")
+    return redirect(url_for("library.index"))
