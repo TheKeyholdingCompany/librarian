@@ -155,7 +155,7 @@
               {% endif %}
             </div>
             <div class="button-group">
-              {% if book_status[book.id] %}
+              {% if book_status[book.id] and (book_status[book.id].user.username == session.get('username') or session.get('role') == 'admin') %}
                 <form method="POST" action="{{ url_for('library.return_book', book_id=book.id) }}" style="display:inline">
                   <button type="submit" class="return-btn">Return</button>
                 </form>

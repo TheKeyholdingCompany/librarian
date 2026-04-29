@@ -107,8 +107,19 @@ def return_book(book_id):
         flash("This book is not currently borrowed.", "error")
         return redirect(url_for("library.index"))
     
+    # Get current user
+    username = session.get("username")
+    current_user = db.session.scalars(db.select(User).where(User.username == username)).first()
+    
+    # Check if user is allowed to return this book
+    is_owner = current_user and current_user.id == active_borrow.user_id
+    is_admin = session.get("role") == "admin"
+    
+    if not (is_owner or is_admin):
+        flash("You don't have permission to return this book.", "error")
+        return redirect(url_for("library.index"))
+    
     # Mark as returned
-    from datetime import datetime, timezone
     active_borrow.returned_at = datetime.now(timezone.utc)
     db.session.commit()
     
