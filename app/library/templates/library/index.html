@@ -33,6 +33,23 @@
   h1 { margin-top: 0; margin-bottom: 0.25rem; }
   ul { padding-left: 1.25rem; }
   li { margin-bottom: 0.25rem; }
+  .actions {
+    margin-bottom: 1.5rem;
+  }
+  .actions a {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: var(--brand);
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  .actions a:hover {
+    background: var(--brand-dark);
+    text-decoration: none;
+  }
 </style>
 {% endblock %}
 
@@ -61,6 +78,9 @@
     <p class="muted">Flask + PostgreSQL is running.</p>
 
     <h2>Books</h2>
+    <div class="actions">
+      <a href="{{ url_for('library.add_book') }}">+ Add Book</a>
+    </div>
     {% if books %}
       <ul>
         {% for book in books %}
@@ -73,3 +93,5 @@
   </div>
 </div>
 {% endblock %}
+
+

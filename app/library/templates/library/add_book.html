@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Add Book - TKC Library{% endblock %}
+
+{% block extra_styles %}
+<style>
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .session {
+    font-size: 0.9rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .session strong { color: var(--text); }
+  .session button {
+    color: var(--brand);
+    background: none;
+    border: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+  }
+  .session button:hover { text-decoration: underline; }
+  h1 { margin-top: 0; margin-bottom: 0.25rem; }
+  
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  label {
+    font-weight: 500;
+    color: var(--text);
+  }
+  
+  input[type="text"],
+  textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--text);
+  }
+  
+  input[type="text"]:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(241, 124, 20, 0.1);
+  }
+  
+  textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+  
+  .form-errors {
+    color: #c41e3a;
+    font-size: 0.875rem;
+  }
+  
+  .form-errors ul {
+    margin: 0.5rem 0;
+    padding-left: 1.25rem;
+  }
+  
+  button {
+    padding: 0.75rem 1.5rem;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  button:hover {
+    background: var(--brand-dark);
+  }
+  
+  .back-link {
+    display: inline-block;
+    margin-bottom: 1rem;
+    color: var(--brand);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  
+  .back-link:hover {
+    text-decoration: underline;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <header>
+    <div class="brand">TKC Library</div>
+    <div class="session">
+      {% if session.get('username') %}
+        Logged in as <strong>{{ session['username'] }}</strong> ({{ session['role'] }})
+        {% if session['role'] == 'admin' %}
+          · <a href="{{ url_for('admin.dashboard') }}">Admin</a>
+        {% endif %}
+        ·
+        <form method="POST" action="{{ url_for('auth.logout') }}" style="display:inline">
+          <button type="submit">Log out</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}">Log in</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <a href="{{ url_for('library.index') }}" class="back-link">← Back to Library</a>
+
+  <div class="card">
+    <h1>Add a New Book</h1>
+    
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      
+      <div class="form-group">
+        {{ form.name.label }}
+        {{ form.name(class="form-control") }}
+        {% if form.name.errors %}
+          <div class="form-errors">
+            <ul>
+              {% for error in form.name.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      </div>
+      
+      <div class="form-group">
+        {{ form.description.label }}
+        {{ form.description(class="form-control") }}
+        {% if form.description.errors %}
+          <div class="form-errors">
+            <ul>
+              {% for error in form.description.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      </div>
+      
+      {{ form.submit() }}
+    </form>
+  </div>
+</div>
+{% endblock %}
