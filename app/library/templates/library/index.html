@@ -89,6 +89,24 @@
     background: var(--muted);
     cursor: not-allowed;
   }
+  .button-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .return-btn {
+    padding: 0.5rem 1rem;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  .return-btn:hover {
+    background: #45a049;
+  }
 </style>
 {% endblock %}
 
@@ -131,13 +149,23 @@
                 <div class="book-status" style="font-size: 0.875rem; color: #d96d0e; margin-top: 0.25rem;">
                   Borrowed by {{ book_status[book.id].user.username }}
                 </div>
+                <div class="book-due-date" style="font-size: 0.875rem; color: #1f2328; margin-top: 0.25rem;">
+                  Due: {{ book_status[book.id].due_date.strftime('%B %d, %Y') }}
+                </div>
               {% endif %}
             </div>
-            <form method="POST" action="{{ url_for('library.borrow_book', book_id=book.id) }}" style="display:inline">
-              <button type="submit" class="borrow-btn" {% if book_status[book.id] %}disabled{% endif %}>
-                {% if book_status[book.id] %}Borrowed{% else %}Borrow{% endif %}
-              </button>
-            </form>
+            <div class="button-group">
+              {% if book_status[book.id] %}
+                <form method="POST" action="{{ url_for('library.return_book', book_id=book.id) }}" style="display:inline">
+                  <button type="submit" class="return-btn">Return</button>
+                </form>
+              {% endif %}
+              <form method="POST" action="{{ url_for('library.borrow_book', book_id=book.id) }}" style="display:inline">
+                <button type="submit" class="borrow-btn" {% if book_status[book.id] %}disabled{% endif %}>
+                  {% if book_status[book.id] %}Borrowed{% else %}Borrow{% endif %}
+                </button>
+              </form>
+            </div>
           </div>
         {% endfor %}
       </div>

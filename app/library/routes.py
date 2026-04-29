@@ -1,4 +1,5 @@
 from flask import render_template, redirect, url_for, session, flash
+from datetime import datetime, timezone, timedelta
 
 from app.auth import login_required
 from app.extensions import db
@@ -58,10 +59,13 @@ def borrow_book(book_id):
         flash("You must be logged in to borrow a book.", "error")
         return redirect(url_for("auth.login"))
     
+    # Try to find user, create if doesn't exist
     user = db.session.scalars(db.select(User).where(User.username == username)).first()
     if not user:
-        flash("User account not found.", "error")
-        return redirect(url_for("library.index"))
+        # Create new user with default email based on username
+        user = User(username=username, email=f"{username}@library.local")
+        db.session.add(user)
+        db.session.commit()
     
     # Check if book is already borrowed
     active_borrow = db.session.scalars(
@@ -76,8 +80,37 @@ def borrow_book(book_id):
     
     # Create borrow record
     borrow = Borrow(book_id=book_id, user_id=user.id)
+    borrow.due_date = datetime.now(timezone.utc) + timedelta(weeks=2)
     db.session.add(borrow)
     db.session.commit()
     
-    flash(f"You've borrowed '{book.name}'!", "success")
+    flash(f"You've borrowed '{book.name}'! Due back on {borrow.due_date.strftime('%B %d, %Y')}.", "success")
+    return redirect(url_for("library.index"))
+
+
+@bp.route("/<int:book_id>/return", methods=["POST"])
+@login_required
+def return_book(book_id):
+    book = db.session.get(Book, book_id)
+    if not book:
+        flash("Book not found.", "error")
+        return redirect(url_for("library.index"))
+    
+    # Get the active borrow
+    active_borrow = db.session.scalars(
+        db.select(Borrow).where(
+            (Borrow.book_id == book_id) & (Borrow.returned_at == None)
+        )
+    ).first()
+    
+    if not active_borrow:
+        flash("This book is not currently borrowed.", "error")
+        return redirect(url_for("library.index"))
+    
+    # Mark as returned
+    from datetime import datetime, timezone
+    active_borrow.returned_at = datetime.now(timezone.utc)
+    db.session.commit()
+    
+    flash(f"You've returned '{book.name}'!", "success")
     return redirect(url_for("library.index"))
