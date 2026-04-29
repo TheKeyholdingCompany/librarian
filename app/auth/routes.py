@@ -1,5 +1,8 @@
-from flask import redirect, render_template, request, session, url_for, flash
+from flask import redirect, render_template, request, session, url_for, flash, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.auth import bp
 from app.extensions import db
@@ -26,7 +29,7 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             session["user_id"] = user.id
             session["username"] = user.username
-            session["role"] = "borrower"
+            session["role"] = user.role
             return redirect(url_for("library.index"))
         
         # Fall back to mock users for learning purposes
@@ -43,10 +46,17 @@ def login():
 @bp.route("/signup", methods=["GET", "POST"])
 def signup():
     form = SignupForm()
+    if request.method == "POST":
+        logger.info(f"POST data: {request.form}")
+        logger.info(f"Form validate_on_submit: {form.validate_on_submit()}")
+        logger.info(f"Form errors: {form.errors}")
+    
     if form.validate_on_submit():
         username = form.username.data.strip()
         email = form.email.data.strip()
         password = form.password.data
+        
+        logger.info(f"Signup attempt: username={username}, email={email}")
         
         # Check if user already exists
         if User.query.filter_by(username=username).first():
@@ -58,16 +68,24 @@ def signup():
             return render_template("auth/signup.html", form=form)
         
         # Create new user with hashed password
-        new_user = User(
-            username=username,
-            email=email,
-            password_hash=generate_password_hash(password)
-        )
-        db.session.add(new_user)
-        db.session.commit()
-        
-        flash("Account created! Please log in.", "success")
-        return redirect(url_for("auth.login"))
+        try:
+            new_user = User(
+                username=username,
+                email=email,
+                password_hash=generate_password_hash(password),
+                role="borrower"
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            
+            logger.info(f"User created successfully: id={new_user.id}, username={username}")
+            
+            flash("Account created! Please log in.", "success")
+            return redirect(url_for("auth.login"))
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error creating user: {e}")
+            flash(f"Error creating account: {str(e)}", "error")
     
     return render_template("auth/signup.html", form=form)
 

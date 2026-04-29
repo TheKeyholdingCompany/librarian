@@ -50,3 +50,24 @@ def reset_password(user_id):
     db.session.commit()
     flash(f"Password for '{user.username}' has been reset.", "success")
     return redirect(url_for("admin.users"))
+
+
+@bp.route("/admin/users/<int:user_id>/change-role", methods=["POST"])
+@admin_required
+def change_role(user_id):
+    user = User.query.get_or_404(user_id)
+    new_role = request.form.get("role", "borrower")
+    
+    if new_role not in ["borrower", "admin"]:
+        flash("Invalid role.", "error")
+        return redirect(url_for("admin.users"))
+    
+    # Prevent admin from changing their own role
+    if user.id == session.get("user_id"):
+        flash("You cannot change your own role.", "error")
+        return redirect(url_for("admin.users"))
+    
+    user.role = new_role
+    db.session.commit()
+    flash(f"Role for '{user.username}' changed to '{new_role}'.", "success")
+    return redirect(url_for("admin.users"))

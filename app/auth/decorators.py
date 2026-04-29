@@ -21,3 +21,15 @@ def admin_required(view):
             abort(403)
         return view(*args, **kwargs)
     return wrapped
+
+
+def borrower_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if "username" not in session:
+            return redirect(url_for("auth.login"))
+        if session.get("role") == "admin":
+            # Admins go to their dashboard instead
+            return redirect(url_for("admin.dashboard"))
+        return view(*args, **kwargs)
+    return wrapped

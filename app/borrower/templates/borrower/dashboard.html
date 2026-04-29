@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Borrower Dashboard - TKC Library{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .dashboard-header h1 {
+    margin: 0;
+  }
+  .welcome {
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .welcome strong {
+    color: var(--text);
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: white;
+    padding: 1.25rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .stat-card h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stat-card .value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .stat-card.alert .value {
+    color: #e53935;
+  }
+  .stat-card.warning .value {
+    color: #fb8c00;
+  }
+  .stat-card.success .value {
+    color: #43a047;
+  }
+  
+  .section {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .section-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .section-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+  .section-content {
+    padding: 1rem 1.25rem;
+  }
+  
+  .alert-box {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+  }
+  .alert-box.overdue {
+    background: #ffebee;
+    border: 1px solid #ffcdd2;
+    color: #c62828;
+  }
+  .alert-box.due-soon {
+    background: #fff3e0;
+    border: 1px solid #ffe0b2;
+    color: #e65100;
+  }
+  .alert-box h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+  }
+  .alert-box p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  tr:last-child td {
+    border-bottom: none;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  .status-badge.active {
+    background: #e3f2fd;
+    color: #1565c0;
+  }
+  .status-badge.returned {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+  .status-badge.overdue {
+    background: #ffebee;
+    color: #c62828;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+  }
+  .empty-state p {
+    margin: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <div>
+    <h1>Borrower Dashboard</h1>
+    <p class="welcome">Welcome, <strong>{{ username }}</strong>!</p>
+  </div>
+  <a href="{{ url_for('library.index') }}" class="btn">Browse Books</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <h3>Currently Borrowing</h3>
+    <div class="value">{{ current_borrows|length }}</div>
+  </div>
+  <div class="stat-card alert {% if overdue %}has-overdue{% endif %}">
+    <h3>Overdue</h3>
+    <div class="value">{{ overdue|length }}</div>
+  </div>
+  <div class="stat-card warning">
+    <h3>Due Soon (3 days)</h3>
+    <div class="value">{{ due_soon|length }}</div>
+  </div>
+  <div class="stat-card success">
+    <h3>Total Borrowed</h3>
+    <div class="value">{{ borrow_history|length }}</div>
+  </div>
+</div>
+
+{% if overdue %}
+<div class="alert-box overdue">
+  <h3>⚠️ Overdue Books</h3>
+  <p>You have {{ overdue|length }} overdue book(s). Please return them as soon as possible to avoid fines.</p>
+</div>
+{% endif %}
+
+{% if due_soon and not overdue %}
+<div class="alert-box due-soon">
+  <h3>⏰ Due Soon</h3>
+  <p>You have {{ due_soon|length }} book(s) due within the next 3 days.</p>
+</div>
+{% endif %}
+
+<div class="section">
+  <div class="section-header">
+    <h2>Currently Borrowing</h2>
+  </div>
+  <div class="section-content">
+    {% if current_borrows %}
+    <table>
+      <thead>
+        <tr>
+          <th>Book</th>
+          <th>Borrowed On</th>
+          <th>Due Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for borrow in current_borrows %}
+        <tr>
+          <td>{{ borrow.book.name }}</td>
+          <td>{{ borrow.borrowed_at.strftime('%B %d, %Y') }}</td>
+          <td>
+            {% if borrow.due_date %}
+              {% if borrow.due_date < now() %}
+                <span style="color: #c62828; font-weight: 500;">{{ borrow.due_date.strftime('%B %d, %Y') }} (Overdue)</span>
+              {% else %}
+                {{ borrow.due_date.strftime('%B %d, %Y') }}
+              {% endif %}
+            {% else %}
+              No due date
+            {% endif %}
+          </td>
+          <td>
+            {% if borrow.due_date and borrow.due_date < now() %}
+            <span class="status-badge overdue">Overdue</span>
+            {% else %}
+            <span class="status-badge active">Active</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <p>You don't have any books currently borrowed.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Borrow History</h2>
+    <a href="{{ url_for('borrower.borrow_history') }}" style="font-size: 0.9rem;">View All →</a>
+  </div>
+  <div class="section-content">
+    {% if borrow_history %}
+    <table>
+      <thead>
+        <tr>
+          <th>Book</th>
+          <th>Borrowed On</th>
+          <th>Returned On</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for borrow in borrow_history[:5] %}
+        <tr>
+          <td>{{ borrow.book.name }}</td>
+          <td>{{ borrow.borrowed_at.strftime('%B %d, %Y') }}</td>
+          <td>{{ borrow.returned_at.strftime('%B %d, %Y') }}</td>
+          <td><span class="status-badge returned">Returned</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <p>You haven't borrowed any books yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

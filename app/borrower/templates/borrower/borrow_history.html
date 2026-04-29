@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Borrow History - TKC Library{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .page-header h1 {
+    margin: 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    background: #f9fafb;
+  }
+  tr:last-child td {
+    border-bottom: none;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  .status-badge.active {
+    background: #e3f2fd;
+    color: #1565c0;
+  }
+  .status-badge.returned {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+  .status-badge.overdue {
+    background: #ffebee;
+    color: #c62828;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    color: var(--muted);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Borrow History</h1>
+  <a href="{{ url_for('borrower.dashboard') }}" class="btn">← Back to Dashboard</a>
+</div>
+
+{% if borrows %}
+<table>
+  <thead>
+    <tr>
+      <th>Book</th>
+      <th>Borrowed On</th>
+      <th>Due Date</th>
+      <th>Returned On</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for borrow in borrows %}
+    <tr>
+      <td>{{ borrow.book.name }}</td>
+      <td>{{ borrow.borrowed_at.strftime('%B %d, %Y') }}</td>
+      <td>
+        {% if borrow.due_date %}
+          {% if borrow.due_date < now() and not borrow.returned_at %}
+            <span style="color: #c62828;">{{ borrow.due_date.strftime('%B %d, %Y') }}</span>
+          {% else %}
+            {{ borrow.due_date.strftime('%B %d, %Y') }}
+          {% endif %}
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>
+        {% if borrow.returned_at %}
+          {{ borrow.returned_at.strftime('%B %d, %Y') }}
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>
+        {% if borrow.returned_at %}
+          <span class="status-badge returned">Returned</span>
+        {% elif borrow.due_date and borrow.due_date < now() %}
+          <span class="status-badge overdue">Overdue</span>
+        {% else %}
+          <span class="status-badge active">Active</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+  <p>You haven't borrowed any books yet.</p>
+  <p><a href="{{ url_for('library.index') }}">Browse available books</a></p>
+</div>
+{% endif %}
+{% endblock %}
