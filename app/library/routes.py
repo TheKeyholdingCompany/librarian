@@ -125,3 +125,29 @@ def return_book(book_id):
     
     flash(f"You've returned '{book.name}'!", "success")
     return redirect(url_for("library.index"))
+
+
+@bp.route("/<int:book_id>/delete", methods=["POST"])
+@login_required
+def delete_book(book_id):
+    # Check if user is admin
+    if session.get("role") != "admin":
+        flash("You don't have permission to delete books.", "error")
+        return redirect(url_for("library.index"))
+    
+    book = db.session.get(Book, book_id)
+    if not book:
+        flash("Book not found.", "error")
+        return redirect(url_for("library.index"))
+    
+    book_name = book.name
+    
+    # Delete associated borrow records first
+    db.session.query(Borrow).filter(Borrow.book_id == book_id).delete()
+    
+    # Delete the book
+    db.session.delete(book)
+    db.session.commit()
+    
+    flash(f"'{book_name}' has been deleted.", "success")
+    return redirect(url_for("library.index"))
