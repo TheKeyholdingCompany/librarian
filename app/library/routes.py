@@ -1,7 +1,7 @@
 from flask import render_template, redirect, url_for, session, flash
 from datetime import datetime, timezone, timedelta
 
-from app.auth import login_required
+from app.auth.decorators import login_required, admin_required
 from app.extensions import db
 from app.forms import BookForm
 from app.library import bp
@@ -34,7 +34,7 @@ def health():
 
 
 @bp.route("/add", methods=["GET", "POST"])
-@login_required
+@admin_required
 def add_book():
     form = BookForm()
     if form.validate_on_submit():
