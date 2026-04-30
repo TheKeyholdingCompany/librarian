@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Borrower Dashboard — TKC Library{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .brand { margin-bottom: 1.5rem; }
+  .card { padding: 2rem; }
+  h1 { margin-top: 0; }
+  .user-card { border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  .user-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .user-meta { color: var(--muted); margin-top: 0.25rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { padding: 0.75rem; border-bottom: 1px solid var(--border); text-align: left; }
+  th { background: #f8f9fa; font-weight: 600; }
+  .muted { color: var(--muted); }
+  .status-active { color: #1f8a70; font-weight: 600; }
+  .status-returned { color: #555; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="brand">TKC Library</div>
+  <div class="card">
+    <h1>Borrower Dashboard</h1>
+    <p>This page shows every registered account and the books they have borrowed, with borrow date, due date, and return status.</p>
+    <p><a href="{{ url_for('admin.dashboard') }}">← Back to admin dashboard</a></p>
+
+    {% if users %}
+      {% for user in users %}
+        <div class="user-card">
+          <div class="user-header">
+            <div>
+              <h2>{{ user.username }}</h2>
+              <div class="user-meta">
+                {{ user.email }} · {{ user.role }} · Joined {{ user.created_at.strftime('%Y-%m-%d') }}
+              </div>
+            </div>
+            <div>
+              <a href="{{ url_for('library.view_borrower_dashboard', user_id=user.id) }}" style="color: var(--brand); text-decoration: none; font-weight: 500;">View Dashboard →</a>
+            </div>
+          </div>
+
+          {% if user.borrows %}
+            <table>
+              <thead>
+                <tr>
+                  <th>Book</th>
+                  <th>Borrowed</th>
+                  <th>Due Date</th>
+                  <th>Returned</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for borrow in user.borrows %}
+                  <tr>
+                    <td>{{ borrow.book.name }}</td>
+                    <td>{{ borrow.borrowed_at.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ borrow.due_date.strftime('%Y-%m-%d') if borrow.due_date else '—' }}</td>
+                    <td>{% if borrow.returned_at %}{{ borrow.returned_at.strftime('%Y-%m-%d') }}{% else %}&mdash;{% endif %}</td>
+                    <td class="{% if borrow.returned_at %}status-returned{% else %}status-active{% endif %}">
+                      {% if borrow.returned_at %}Returned{% else %}Currently borrowed{% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="muted">No borrow records for this account.</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No signed-up accounts found.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

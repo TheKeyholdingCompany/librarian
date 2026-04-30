@@ -51,6 +51,35 @@ def dashboard():
     return render_template("library/dashboard.html", user=user, borrows=borrows)
 
 
+@bp.route("/dashboard/<int:user_id>")
+@login_required
+def view_borrower_dashboard(user_id):
+    # Allow viewing own dashboard or if user is admin
+    current_username = session.get("username")
+    current_user = db.session.scalars(
+        db.select(User).where(User.username == current_username)
+    ).first()
+    
+    is_admin = session.get("role") == "admin"
+    target_user = db.session.scalars(
+        db.select(User)
+        .options(selectinload(User.borrows).selectinload(Borrow.book))
+        .where(User.id == user_id)
+    ).first()
+    
+    if not target_user:
+        flash("User not found.", "error")
+        return redirect(url_for("library.index"))
+    
+    # Allow access if viewing own dashboard or if admin
+    is_owner = current_user and current_user.id == target_user.id
+    if not (is_owner or is_admin):
+        flash("You don't have permission to view this dashboard.", "error")
+        return redirect(url_for("library.index"))
+    
+    borrows = sorted(target_user.borrows, key=lambda borrow: borrow.borrowed_at or datetime.min, reverse=True)
+    return render_template("library/dashboard.html", user=target_user, borrows=borrows)
+
 
 @bp.route("/add", methods=["GET", "POST"])
 @admin_required

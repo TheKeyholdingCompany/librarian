@@ -131,6 +131,7 @@
     <div class="session">
       {% if session.get('username') %}
         Logged in as <strong>{{ session['username'] }}</strong> ({{ session['role'] }})
+        · <a href="{{ url_for('library.dashboard') }}">My Dashboard</a>
         {% if session['role'] == 'admin' %}
           · <a href="{{ url_for('admin.dashboard') }}">Admin</a>
         {% endif %}
