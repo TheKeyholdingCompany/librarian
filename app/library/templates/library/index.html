@@ -190,9 +190,11 @@
     <p class="muted">Flask + PostgreSQL is running.</p>
 
     <h2>Books</h2>
+    {% if session.get('role') == 'admin' %}
     <div class="actions">
       <a href="{{ url_for('library.add_book') }}">+ Add Book</a>
     </div>
+    {% endif %}
     {% if books %}
       <div class="book-grid">
         {% for book in books %}
