@@ -191,7 +191,10 @@ def dashboard():
     username = session.get("username")
     user = db.session.scalars(
         db.select(User)
-        .options(selectinload(User.borrows).selectinload(Borrow.book))
+        .options(
+            selectinload(User.borrows).selectinload(Borrow.book),
+            selectinload(User.favorites),
+        )
         .where(User.username == username)
     ).first()
 
@@ -214,7 +217,10 @@ def view_borrower_dashboard(user_id):
     is_admin = session.get("role") == "admin"
     target_user = db.session.scalars(
         db.select(User)
-        .options(selectinload(User.borrows).selectinload(Borrow.book))
+        .options(
+            selectinload(User.borrows).selectinload(Borrow.book),
+            selectinload(User.favorites),
+        )
         .where(User.id == user_id)
     ).first()
     
