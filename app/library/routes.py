@@ -38,6 +38,9 @@ def index():
         ).first()
         book_status[book.id] = active_borrow
         
+        # Initialize user rating data
+        user_rating_data[book.id] = None
+        
         # Ratings
         ratings = db.session.scalars(
             db.select(Rating).where(Rating.book_id == book.id)
@@ -48,7 +51,7 @@ def index():
         else:
             book_ratings[book.id] = None
             
-        # User's rating data for the current book
+        # User's rating
         if user_id:
             user_rating = db.session.scalars(
                 db.select(Rating).where(
