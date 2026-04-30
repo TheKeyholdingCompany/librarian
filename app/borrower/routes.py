@@ -1,10 +1,11 @@
 from flask import render_template, redirect, url_for, flash, session
 from datetime import datetime, timezone, timedelta
+from sqlalchemy.orm import selectinload
 
 from app.auth import login_required
 from app.extensions import db
 from app.borrower import bp
-from app.models import Borrow, Book
+from app.models import Borrow, Book, User
 
 
 @bp.route("/dashboard")
@@ -13,6 +14,13 @@ def dashboard():
     """Borrower dashboard showing borrow history, current borrows, and due soon alerts."""
     username = session.get("username")
     user_id = session.get("user_id")
+    
+    # Get user with favorites
+    user = db.session.scalar(
+        db.select(User)
+        .options(selectinload(User.favorites))
+        .where(User.id == user_id)
+    )
     
     # Get current borrows (not returned)
     current_borrows = db.session.scalars(
@@ -47,7 +55,8 @@ def dashboard():
         borrow_history=borrow_history,
         due_soon=due_soon,
         overdue=overdue,
-        username=username
+        username=username,
+        user=user
     )
 
 

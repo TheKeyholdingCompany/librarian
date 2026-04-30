@@ -176,6 +176,10 @@
     <h3>Total Borrowed</h3>
     <div class="value">{{ borrow_history|length }}</div>
   </div>
+  <div class="stat-card">
+    <h3>Favorite Books</h3>
+    <div class="value">{{ user.favorites|length if user else 0 }}</div>
+  </div>
 </div>
 
 {% if overdue %}
@@ -276,4 +280,32 @@
     {% endif %}
   </div>
 </div>
+
+{% if user and user.favorites %}
+<div class="section">
+  <div class="section-header">
+    <h2>Favorite Books</h2>
+  </div>
+  <div class="section-content">
+    <table>
+      <thead>
+        <tr>
+          <th>Book Title</th>
+          <th>Author</th>
+          <th>Genre</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for book in user.favorites %}
+        <tr>
+          <td><a href="{{ url_for('library.index') }}#book-{{ book.id }}">{{ book.name }}</a></td>
+          <td>{{ book.author or 'Unknown' }}</td>
+          <td>{{ book.genre or 'Unknown' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
