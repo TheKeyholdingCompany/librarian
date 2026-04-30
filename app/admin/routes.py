@@ -11,7 +11,13 @@ from app.models import Borrow, User
 @bp.route("/admin")
 @admin_required
 def dashboard():
-    return render_template("admin/dashboard.html")
+    username = session.get("username")
+    user = db.session.scalar(
+        db.select(User)
+        .options(selectinload(User.favorites))
+        .where(User.username == username)
+    )
+    return render_template("admin/dashboard.html", user=user)
 
 
 @bp.route("/admin/borrowers")

@@ -16,6 +16,20 @@
   <div class="card">
     <h1>Admin dashboard</h1>
     <p>Hi <strong>{{ session['username'] }}</strong> — you have admin access.</p>
+    {% if user and user.favorites %}
+      <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 10px;">
+        <strong>Favourite books</strong>
+        <ul style="margin: 0.75rem 0 0 1rem; padding: 0; list-style: disc; color: var(--text);">
+          {% for book in user.favorites %}
+            <li>{{ book.name }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% elif user %}
+      <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 10px; color: var(--muted);">
+        You haven't favourited any books yet.
+      </div>
+    {% endif %}
     <p><a href="{{ url_for('admin.users') }}">Manage Users</a> — View, delete, and reset passwords for all registered users.</p>
     <p><a href="{{ url_for('admin.borrowers') }}">Borrower Dashboard</a> — See all signed-up accounts and their borrowed books, borrow dates, due dates, and return dates.</p>
     <p class="muted">This page is only visible to users with the <code>admin</code> role. Borrowers who try to visit it get a <code>403 Forbidden</code>.</p>
