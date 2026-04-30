@@ -18,11 +18,33 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 
+def _get_or_create_user(username):
+    if not username:
+        return None
+
+    user = db.session.scalar(db.select(User).where(User.username == username))
+    if not user:
+        user = User(
+            username=username,
+            email=f"{username}@library.local",
+            role=session.get("role", "borrower"),
+        )
+        db.session.add(user)
+        db.session.commit()
+    return user
+
+
 @bp.route("/")
 @login_required
 def index():
     books = db.session.scalars(db.select(Book).order_by(Book.created_at.desc())).all()
-    
+    username = session.get("username")
+    favorite_book_ids = set()
+    if username:
+        user = db.session.scalar(db.select(User).where(User.username == username))
+        if user:
+            favorite_book_ids = {book.id for book in user.favorites}
+
     # Get borrow status for each book
     book_status = {}
     book_ratings = {}
@@ -63,7 +85,43 @@ def index():
                 "review": user_rating.review,
             } if user_rating else None
     
-    return render_template("library/index.html", books=books, book_status=book_status, book_ratings=book_ratings, user_rating_data=user_rating_data)
+    return render_template(
+        "library/index.html",
+        books=books,
+        book_status=book_status,
+        favorite_book_ids=favorite_book_ids,
+        book_ratings=book_ratings,
+        user_rating_data=user_rating_data,
+    )
+
+
+@bp.route("/<int:book_id>/favorite", methods=["POST"])
+@login_required
+def favorite_book(book_id):
+    book = db.session.get(Book, book_id)
+    if not book:
+        flash("Book not found.", "error")
+        return redirect(url_for("library.index"))
+
+    username = session.get("username")
+    if not username:
+        flash("You must be logged in to favourite a book.", "error")
+        return redirect(url_for("auth.login"))
+
+    user = _get_or_create_user(username)
+    if not user:
+        flash("Unable to find or create user.", "error")
+        return redirect(url_for("library.index"))
+
+    if book in user.favorites:
+        user.favorites.remove(book)
+        flash(f"Removed '{book.name}' from your favourites.", "success")
+    else:
+        user.favorites.append(book)
+        flash(f"Added '{book.name}' to your favourites.", "success")
+
+    db.session.commit()
+    return redirect(url_for("library.index"))
 
 
 @bp.route("/rate/<int:book_id>", methods=["POST"])
@@ -107,6 +165,10 @@ def rate_book(book_id):
     
     db.session.commit()
     return redirect(url_for("library.index"))
+
+
+@bp.route("/health")
+def health():
 
 
 @bp.route("/health")

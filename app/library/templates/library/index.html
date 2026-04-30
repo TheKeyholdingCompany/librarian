@@ -151,6 +151,35 @@
   .delete-btn:hover {
     background: #a01729;
   }
+  .favorite-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 0.6rem 0.75rem;
+    background: transparent;
+    color: var(--brand);
+    border: 1px solid var(--brand);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .favorite-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+  .favorite-btn.active {
+    background: var(--brand);
+    color: white;
+  }
+  .rate-btn {
+    background: none;
+    border: none;
+    color: var(--brand);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0;
+    text-decoration: underline;
+  }
   @media (max-width: 1024px) {
     .book-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -233,7 +262,7 @@
                     </span>
                   </div>
                 {% endif %}
-                <button class="rate-btn" onclick='openRatingModal({{ book.id }}, {{ book.name | tojson }}, {{ user_rating_data.get(book.id, None) | tojson }})' style="margin-left: 0.5rem; background: none; border: none; color: var(--brand); cursor: pointer; font-size: 0.85rem; padding: 0; text-decoration: underline;">
+                <button class="rate-btn" onclick="openRatingModal({{ book.id }}, {{ book.name | tojson }}, {{ user_rating_data.get(book.id, None) | tojson }})">
                   {% if user_rating_data.get(book.id) %}Edit rating{% else %}Rate this book{% endif %}
                 </button>
               </div>
@@ -264,6 +293,11 @@
                 <form method="POST" action="{{ url_for('library.borrow_book', book_id=book.id) }}" style="flex: 1; display: flex;">
                   <button type="submit" class="book-btn borrow-btn" {% if book_status[book.id] %}disabled{% endif %}>
                     {% if book_status[book.id] %}Borrowed{% else %}Borrow{% endif %}
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('library.favorite_book', book_id=book.id) }}" style="flex: 1; display: flex;">
+                  <button type="submit" class="book-btn favorite-btn {% if book.id in favorite_book_ids|default([]) %}active{% endif %}">
+                    {% if book.id in favorite_book_ids|default([]) %}♥ Favourite{% else %}♡ Favourite{% endif %}
                   </button>
                 </form>
                 {% if session.get('role') == 'admin' %}
