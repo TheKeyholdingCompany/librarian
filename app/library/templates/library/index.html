@@ -50,6 +50,32 @@
     background: var(--brand-dark);
     text-decoration: none;
   }
+  .search-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .search-input {
+    flex: 1;
+    min-width: 240px;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+  .search-btn {
+    padding: 0.75rem 1.25rem;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .search-btn:hover {
+    background: var(--brand-dark);
+  }
   .book-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -219,6 +245,17 @@
     <p class="muted">Flask + PostgreSQL is running.</p>
 
     <h2>Books</h2>
+    <form class="search-bar" method="GET" action="{{ url_for('library.index') }}">
+      <input
+        type="search"
+        name="q"
+        class="search-input"
+        placeholder="Search by title or description"
+        value="{{ search_query|default('') }}"
+        aria-label="Search books"
+      />
+      <button type="submit" class="search-btn">Search</button>
+    </form>
     {% if session.get('role') == 'admin' %}
     <div class="actions">
       <a href="{{ url_for('library.add_book') }}">+ Add Book</a>
@@ -262,8 +299,15 @@
                     </span>
                   </div>
                 {% endif %}
-                <button class="rate-btn" onclick="openRatingModal({{ book.id }}, {{ book.name | tojson }}, {{ user_rating_data.get(book.id, None) | tojson }})">
-                  {% if user_rating_data.get(book.id) %}Edit rating{% else %}Rate this book{% endif %}
+                <button
+                  class="rate-btn"
+                  type="button"
+                  onclick="openRatingModal(this)"
+                  data-book-id="{{ book.id }}"
+                  data-book-name="{{ book.name | e }}"
+                  data-user-rating='{{ (user_rating_data[book.id] if book.id in user_rating_data else None) | tojson }}'
+                >
+                  {% if book.id in user_rating_data %}Edit rating{% else %}Rate this book{% endif %}
                 </button>
               </div>
               
@@ -311,7 +355,11 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="muted">No books yet.</p>
+      {% if search_query %}
+        <p class="muted">No books found for "{{ search_query }}".</p>
+      {% else %}
+        <p class="muted">No books yet.</p>
+      {% endif %}
     {% endif %}
   </div>
 
@@ -352,7 +400,18 @@
 <script>
 let currentBookId = null;
 
-function openRatingModal(bookId, bookName, userRating) {
+function openRatingModal(button) {
+  const bookId = button.dataset.bookId;
+  const bookName = button.dataset.bookName;
+  const userRatingRaw = button.dataset.userRating;
+  let userRating = null;
+
+  try {
+    userRating = userRatingRaw ? JSON.parse(userRatingRaw) : null;
+  } catch (err) {
+    userRating = null;
+  }
+
   currentBookId = bookId;
   document.getElementById('modal-title').textContent = `Rate "${bookName}"`;
   document.getElementById('rating-form').action = `/rate/${bookId}`;
