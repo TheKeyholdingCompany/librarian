@@ -2,12 +2,20 @@ from flask import render_template, redirect, url_for, session, flash
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import selectinload
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
+import os
+from uuid import uuid4
 
 from app.auth.decorators import login_required, admin_required
 from app.extensions import db
 from app.forms import BookForm
 from app.library import bp
 from app.models import Book, Borrow, User
+
+# Photo upload configuration
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "uploads")
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 
 @bp.route("/")
@@ -87,8 +95,20 @@ def add_book():
     form = BookForm()
     if form.validate_on_submit():
         book = Book(name=form.name.data, description=form.description.data)
+        
+        # Handle file upload
+        if form.photo.data:
+            file = form.photo.data
+            filename = secure_filename(file.filename)
+            # Add unique prefix to avoid name collisions
+            filename = f"{uuid4().hex}_{filename}"
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
+            book.photo_filename = filename
+        
         db.session.add(book)
         db.session.commit()
+        flash(f"Book '{book.name}' added successfully!", "success")
         return redirect(url_for("library.index"))
     return render_template("library/add_book.html", form=form)
 
