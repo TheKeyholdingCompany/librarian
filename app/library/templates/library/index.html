@@ -302,6 +302,7 @@
                 <button
                   class="rate-btn"
                   type="button"
+                  onclick="openRatingModal(this)"
                   data-book-id="{{ book.id }}"
                   data-book-name="{{ book.name | e }}"
                   data-user-rating='{{ (user_rating_data.get(book.id) if user_rating_data.get(book.id) else None) | tojson | e }}'
@@ -445,14 +446,18 @@ function bindRatingButtons() {
   });
 }
 
-bindRatingButtons();
-
-// Star rating interaction
-document.querySelectorAll('.star-rating label').forEach((label, index) => {
-  label.addEventListener('click', () => {
-    const rating = 5 - index;
-    updateStars(rating);
+function bindStarLabels() {
+  document.querySelectorAll('.star-rating label').forEach((label, index) => {
+    label.addEventListener('click', () => {
+      const rating = 5 - index;
+      updateStars(rating);
+    });
   });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  bindRatingButtons();
+  bindStarLabels();
 });
 
 function updateStars(rating) {
