@@ -1,5 +1,6 @@
 from flask import render_template, redirect, url_for, session, flash, request
 from datetime import datetime, timezone, timedelta
+from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
@@ -27,6 +28,7 @@ def _get_or_create_user(username):
         user = User(
             username=username,
             email=f"{username}@library.local",
+            password_hash=generate_password_hash(username),
             role=session.get("role", "borrower"),
         )
         db.session.add(user)
@@ -38,11 +40,15 @@ def _get_or_create_user(username):
 @login_required
 def index():
     search_query = request.args.get("q", "").strip()
-    books_query = db.select(Book).order_by(Book.created_at.desc())
+    book_stmt = db.select(Book)
     if search_query:
-        books_query = books_query.where(Book.name.ilike(f"%{search_query}%"))
-
-    books = db.session.scalars(books_query).all()
+        book_stmt = book_stmt.where(
+            or_(
+                Book.name.ilike(f"%{search_query}%"),
+                Book.description.ilike(f"%{search_query}%"),
+            )
+        )
+    books = db.session.scalars(book_stmt.order_by(Book.created_at.desc())).all()
     username = session.get("username")
     favorite_book_ids = set()
     if username:
@@ -98,6 +104,7 @@ def index():
         favorite_book_ids=favorite_book_ids,
         book_ratings=book_ratings,
         user_rating_data=user_rating_data,
+        search_query=search_query,
     )
 
 
@@ -185,7 +192,10 @@ def dashboard():
     username = session.get("username")
     user = db.session.scalars(
         db.select(User)
-        .options(selectinload(User.borrows).selectinload(Borrow.book))
+        .options(
+            selectinload(User.borrows).selectinload(Borrow.book),
+            selectinload(User.favorites),
+        )
         .where(User.username == username)
     ).first()
 
@@ -208,7 +218,10 @@ def view_borrower_dashboard(user_id):
     is_admin = session.get("role") == "admin"
     target_user = db.session.scalars(
         db.select(User)
-        .options(selectinload(User.borrows).selectinload(Borrow.book))
+        .options(
+            selectinload(User.borrows).selectinload(Borrow.book),
+            selectinload(User.favorites),
+        )
         .where(User.id == user_id)
     ).first()
     

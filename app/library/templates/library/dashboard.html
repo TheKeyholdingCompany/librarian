@@ -42,6 +42,10 @@
           <small>Currently borrowed</small>
           <strong>{{ user.borrows|selectattr('returned_at', 'equalto', none)|list|length }}</strong>
         </div>
+        <div class="stat">
+          <small>Favourite books</small>
+          <strong>{{ user.favorites|length }}</strong>
+        </div>
       </div>
 
       {% if borrows %}
@@ -72,6 +76,30 @@
       {% else %}
         <p class="muted">You have no borrow records yet.</p>
       {% endif %}
+
+      <div style="margin-top: 2rem;">
+        <h2>Favourite Books</h2>
+        {% if user.favorites %}
+          <table>
+            <thead>
+              <tr>
+                <th>Book</th>
+                <th>Added</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for book in user.favorites %}
+                <tr>
+                  <td>{{ book.name }}</td>
+                  <td>{{ book.created_at.strftime('%Y-%m-%d') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="muted">You haven't favourited any books yet.</p>
+        {% endif %}
+      </div>
     {% else %}
       <p class="muted">No borrower account found for your login.</p>
     {% endif %}
