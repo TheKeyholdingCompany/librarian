@@ -27,6 +27,7 @@ def _get_or_create_user(username):
         user = User(
             username=username,
             email=f"{username}@library.local",
+            password_hash=generate_password_hash(username),
             role=session.get("role", "borrower"),
         )
         db.session.add(user)
