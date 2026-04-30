@@ -302,12 +302,11 @@
                 <button
                   class="rate-btn"
                   type="button"
-                  onclick="openRatingModal(this)"
                   data-book-id="{{ book.id }}"
                   data-book-name="{{ book.name | e }}"
-                  data-user-rating='{{ (user_rating_data[book.id] if book.id in user_rating_data else None) | tojson }}'
+                  data-user-rating='{{ (user_rating_data.get(book.id) if user_rating_data.get(book.id) else None) | tojson | e }}'
                 >
-                  {% if book.id in user_rating_data %}Edit rating{% else %}Rate this book{% endif %}
+                  {% if user_rating_data.get(book.id) %}Edit rating{% else %}Rate this book{% endif %}
                 </button>
               </div>
               
@@ -438,6 +437,15 @@ function closeRatingModal() {
   document.getElementById('rating-modal').style.display = 'none';
   currentBookId = null;
 }
+
+// Rate button interaction
+function bindRatingButtons() {
+  document.querySelectorAll('.rate-btn').forEach(button => {
+    button.addEventListener('click', () => openRatingModal(button));
+  });
+}
+
+bindRatingButtons();
 
 // Star rating interaction
 document.querySelectorAll('.star-rating label').forEach((label, index) => {
