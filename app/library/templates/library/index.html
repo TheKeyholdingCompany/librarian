@@ -50,37 +50,85 @@
     background: var(--brand-dark);
     text-decoration: none;
   }
-  .book-item {
+  .book-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+  .book-card {
+    background: #f8f9fa;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .book-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  .book-photo {
+    width: 100%;
+    height: 200px;
+    background: #e0e0e0;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border);
+    justify-content: center;
+    font-size: 3rem;
+    color: #999;
+    overflow: hidden;
   }
-  .book-item:last-child {
-    border-bottom: none;
+  .book-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
-  .book-info {
-    flex: 1;
+  .book-details {
+    padding: 1rem;
   }
-  .book-name {
-    font-weight: 500;
+  .book-title {
+    font-size: 1.1rem;
+    font-weight: 600;
     color: var(--text);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
   }
-  .book-date {
-    font-size: 0.875rem;
+  .book-meta {
+    font-size: 0.85rem;
     color: var(--muted);
+    margin-bottom: 0.75rem;
   }
-  .borrow-btn {
-    padding: 0.5rem 1rem;
-    background: var(--brand);
-    color: white;
+  .book-status-info {
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+  }
+  .book-status-info.borrowed {
+    color: #d96d0e;
+    font-weight: 600;
+  }
+  .book-status-info.available {
+    color: #1f8a70;
+    font-weight: 600;
+  }
+  .book-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .book-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 0.6rem 0.75rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
     transition: background-color 0.2s;
+  }
+  .borrow-btn {
+    background: var(--brand);
+    color: white;
   }
   .borrow-btn:hover {
     background: var(--brand-dark);
@@ -89,46 +137,30 @@
     background: var(--muted);
     cursor: not-allowed;
   }
-  .button-group {
-    display: flex;
-    gap: 0.5rem;
-  }
   .return-btn {
-    padding: 0.5rem 1rem;
     background: #4CAF50;
     color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: background-color 0.2s;
   }
   .return-btn:hover {
     background: #45a049;
   }
   .delete-btn {
-    padding: 0.5rem 1rem;
     background: #c41e3a;
     color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: background-color 0.2s;
   }
   .delete-btn:hover {
     background: #a01729;
   }
   .favorite-btn {
-    padding: 0.5rem 1rem;
+    flex: 1;
+    min-width: 80px;
+    padding: 0.6rem 0.75rem;
     background: transparent;
     color: var(--brand);
     border: 1px solid var(--brand);
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
     transition: background-color 0.2s, color 0.2s;
   }
@@ -138,6 +170,25 @@
   .favorite-btn.active {
     background: var(--brand);
     color: white;
+  }
+  .rate-btn {
+    background: none;
+    border: none;
+    color: var(--brand);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0;
+    text-decoration: underline;
+  }
+  @media (max-width: 1024px) {
+    .book-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (max-width: 640px) {
+    .book-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 {% endblock %}
@@ -149,6 +200,7 @@
     <div class="session">
       {% if session.get('username') %}
         Logged in as <strong>{{ session['username'] }}</strong> ({{ session['role'] }})
+        · <a href="{{ url_for('library.dashboard') }}">My Dashboard</a>
         {% if session['role'] == 'admin' %}
           · <a href="{{ url_for('admin.dashboard') }}">Admin</a>
         {% endif %}
@@ -171,42 +223,87 @@
       <a href="{{ url_for('library.add_book') }}">+ Add Book</a>
     </div>
     {% if books %}
-      <div>
+      <div class="book-grid">
         {% for book in books %}
-          <div class="book-item">
-            <div class="book-info">
-              <div class="book-name">{{ book.name }}</div>
-              <div class="book-date">Added {{ book.created_at.strftime('%Y-%m-%d') }}</div>
-              {% if book_status[book.id] %}
-                <div class="book-status" style="font-size: 0.875rem; color: #d96d0e; margin-top: 0.25rem;">
-                  Borrowed by {{ book_status[book.id].user.username }}
-                </div>
-                <div class="book-due-date" style="font-size: 0.875rem; color: #1f2328; margin-top: 0.25rem;">
-                  Due: {{ book_status[book.id].due_date.strftime('%B %d, %Y') }}
-                </div>
+          <div class="book-card">
+            <div class="book-photo">
+              {% if book.photo_filename %}
+                <img src="{{ url_for('static', filename='uploads/' + book.photo_filename) }}" alt="{{ book.name }}">
+              {% else %}
+                📖
               {% endif %}
             </div>
-            <div class="button-group">
-              {% if book_status[book.id] and (book_status[book.id].user.username == session.get('username') or session.get('role') == 'admin') %}
-                <form method="POST" action="{{ url_for('library.return_book', book_id=book.id) }}" style="display:inline">
-                  <button type="submit" class="return-btn">Return</button>
-                </form>
-              {% endif %}
-              <form method="POST" action="{{ url_for('library.borrow_book', book_id=book.id) }}" style="display:inline">
-                <button type="submit" class="borrow-btn" {% if book_status[book.id] %}disabled{% endif %}>
-                  {% if book_status[book.id] %}Borrowed{% else %}Borrow{% endif %}
+            <div class="book-details">
+              <div class="book-title">{{ book.name }}</div>
+              <div class="book-meta">Added {{ book.created_at.strftime('%Y-%m-%d') }}</div>
+              
+              <!-- Rating Display -->
+              <div class="book-rating" style="margin: 0.5rem 0;">
+                {% if book_ratings[book.id] %}
+                  <div class="stars-display">
+                    {% for i in range(1, 6) %}
+                      {% if i <= book_ratings[book.id] %}
+                        ★
+                      {% else %}
+                        ☆
+                      {% endif %}
+                    {% endfor %}
+                    <span style="margin-left: 0.5rem; font-size: 0.85rem; color: var(--muted);">
+                      {{ book_ratings[book.id] }}/5 ({{ book.ratings|length }} review{{ 's' if book.ratings|length != 1 else '' }})
+                    </span>
+                  </div>
+                {% else %}
+                  <div class="stars-display" style="color: #ddd;">
+                    ☆☆☆☆☆
+                    <span style="margin-left: 0.5rem; font-size: 0.85rem; color: var(--muted);">
+                      No ratings yet
+                    </span>
+                  </div>
+                {% endif %}
+                <button class="rate-btn" onclick="openRatingModal({{ book.id }}, {{ book.name | tojson }}, {{ user_rating_data[book.id] | tojson }})">
+                  {% if user_rating_data[book.id] %}Edit rating{% else %}Rate this book{% endif %}
                 </button>
-              </form>
-              <form method="POST" action="{{ url_for('library.favorite_book', book_id=book.id) }}" style="display:inline">
-                <button type="submit" class="favorite-btn {% if book.id in favorite_book_ids|default([]) %}active{% endif %}">
-                  {% if book.id in favorite_book_ids|default([]) %}♥ Favourite{% else %}♡ Favourite{% endif %}
-                </button>
-              </form>
-              {% if session.get('role') == 'admin' %}
-                <form method="POST" action="{{ url_for('library.delete_book', book_id=book.id) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this book?');">
-                  <button type="submit" class="delete-btn">Delete</button>
-                </form>
+              </div>
+              
+              {% if book_status[book.id] %}
+                <div class="book-status-info borrowed">
+                  Borrowed by {{ book_status[book.id].user.username }}
+                </div>
+                <div class="book-meta" style="color: #d96d0e;">
+                  Due: {{ book_status[book.id].due_date.strftime('%b %d, %Y') }}
+                </div>
+              {% else %}
+                <div class="book-status-info available">Available</div>
               {% endif %}
+              
+              {% if book.description %}
+                <div class="book-meta" style="margin: 0.5rem 0; line-height: 1.4; font-style: italic; color: var(--text); max-height: 60px; overflow: hidden;">
+                  {{ book.description[:100] }}{% if book.description|length > 100 %}...{% endif %}
+                </div>
+              {% endif %}
+              
+              <div class="book-actions">
+                {% if book_status[book.id] and (book_status[book.id].user.username == session.get('username') or session.get('role') == 'admin') %}
+                  <form method="POST" action="{{ url_for('library.return_book', book_id=book.id) }}" style="flex: 1; display: flex;">
+                    <button type="submit" class="book-btn return-btn">Return</button>
+                  </form>
+                {% endif %}
+                <form method="POST" action="{{ url_for('library.borrow_book', book_id=book.id) }}" style="flex: 1; display: flex;">
+                  <button type="submit" class="book-btn borrow-btn" {% if book_status[book.id] %}disabled{% endif %}>
+                    {% if book_status[book.id] %}Borrowed{% else %}Borrow{% endif %}
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('library.favorite_book', book_id=book.id) }}" style="flex: 1; display: flex;">
+                  <button type="submit" class="book-btn favorite-btn {% if book.id in favorite_book_ids|default([]) %}active{% endif %}">
+                    {% if book.id in favorite_book_ids|default([]) %}♥ Favourite{% else %}♡ Favourite{% endif %}
+                  </button>
+                </form>
+                {% if session.get('role') == 'admin' %}
+                  <form method="POST" action="{{ url_for('library.delete_book', book_id=book.id) }}" style="flex: 1; display: flex;" onsubmit="return confirm('Are you sure you want to delete this book?');">
+                    <button type="submit" class="book-btn delete-btn">Delete</button>
+                  </form>
+                {% endif %}
+              </div>
             </div>
           </div>
         {% endfor %}
@@ -215,5 +312,97 @@
       <p class="muted">No books yet.</p>
     {% endif %}
   </div>
+
+  <!-- Rating Modal -->
+  <div id="rating-modal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: white; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 10px;">
+      <span class="close" onclick="closeRatingModal()" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+      <h3 id="modal-title">Rate Book</h3>
+      <form id="rating-form" method="POST">
+        <div style="margin: 20px 0;">
+          <label style="display: block; margin-bottom: 10px; font-weight: 600;">Rating:</label>
+          <div class="star-rating" style="font-size: 2rem; margin-bottom: 15px;">
+            <input type="radio" id="star5" name="rating" value="5" style="display: none;">
+            <label for="star5" style="cursor: pointer; color: #ddd;">★</label>
+            <input type="radio" id="star4" name="rating" value="4" style="display: none;">
+            <label for="star4" style="cursor: pointer; color: #ddd;">★</label>
+            <input type="radio" id="star3" name="rating" value="3" style="display: none;">
+            <label for="star3" style="cursor: pointer; color: #ddd;">★</label>
+            <input type="radio" id="star2" name="rating" value="2" style="display: none;">
+            <label for="star2" style="cursor: pointer; color: #ddd;">★</label>
+            <input type="radio" id="star1" name="rating" value="1" style="display: none;">
+            <label for="star1" style="cursor: pointer; color: #ddd;">★</label>
+          </div>
+        </div>
+        <div style="margin: 20px 0;">
+          <label for="review" style="display: block; margin-bottom: 10px; font-weight: 600;">Review (optional):</label>
+          <textarea id="review" name="review" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; resize: vertical;" placeholder="Share your thoughts about this book..."></textarea>
+        </div>
+        <div style="text-align: right;">
+          <button type="button" onclick="closeRatingModal()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Cancel</button>
+          <button type="submit" style="background: var(--brand); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Submit Rating</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
+
+<script>
+let currentBookId = null;
+
+function openRatingModal(bookId, bookName, userRating) {
+  currentBookId = bookId;
+  document.getElementById('modal-title').textContent = `Rate "${bookName}"`;
+  document.getElementById('rating-form').action = `/rate/${bookId}`;
+  document.getElementById('rating-modal').style.display = 'block';
+  
+  // Reset form
+  document.getElementById('rating-form').reset();
+  document.querySelectorAll('.star-rating label').forEach(label => {
+    label.style.color = '#ddd';
+  });
+  
+  // Load existing rating if any
+  if (userRating) {
+    const starInput = document.getElementById(`star${userRating.rating}`);
+    if (starInput) {
+      starInput.checked = true;
+    }
+    updateStars(userRating.rating);
+    document.getElementById('review').value = userRating.review || '';
+  }
+}
+
+function closeRatingModal() {
+  document.getElementById('rating-modal').style.display = 'none';
+  currentBookId = null;
+}
+
+// Star rating interaction
+document.querySelectorAll('.star-rating label').forEach((label, index) => {
+  label.addEventListener('click', () => {
+    const rating = 5 - index;
+    updateStars(rating);
+  });
+});
+
+function updateStars(rating) {
+  document.querySelectorAll('.star-rating label').forEach((label, index) => {
+    if (index < rating) {
+      label.style.color = '#ffc107';
+    } else {
+      label.style.color = '#ddd';
+    }
+  });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('rating-modal');
+  if (event.target == modal) {
+    closeRatingModal();
+  }
+}
+</script>
+
 {% endblock %}

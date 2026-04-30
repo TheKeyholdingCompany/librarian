@@ -32,6 +32,8 @@ class User(db.Model):
         lazy="subquery",
         backref=db.backref("favorited_by", lazy="subquery"),
     )
+    # Relationship to ratings
+    ratings = db.relationship("Rating", back_populates="user", lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.id} {self.username!r}>"
@@ -58,6 +60,7 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text, nullable=True)
+    photo_filename = db.Column(db.String(200), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -66,6 +69,8 @@ class Book(db.Model):
 
     # Relationship to borrows
     borrows = db.relationship("Borrow", backref="book", lazy=True, cascade="all, delete-orphan")
+    # Relationship to ratings
+    ratings = db.relationship("Rating", back_populates="book", lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Book {self.id} {self.name!r}>"
@@ -92,3 +97,33 @@ class Borrow(db.Model):
     def is_active(self):
         """Check if the book is currently borrowed (not returned)."""
         return self.returned_at is None
+
+
+class Rating(db.Model):
+    __tablename__ = "ratings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
+    review = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    # Relationships
+    book = db.relationship("Book", back_populates="ratings")
+    user = db.relationship("User", back_populates="ratings")
+
+    def __repr__(self):
+        return f"<Rating {self.id} book_id={self.book_id} user_id={self.user_id} rating={self.rating}>"
+
+    __table_args__ = (db.UniqueConstraint('book_id', 'user_id', name='unique_user_book_rating'),)

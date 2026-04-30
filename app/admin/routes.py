@@ -1,16 +1,26 @@
 from flask import abort, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import generate_password_hash
+from sqlalchemy.orm import selectinload
 
 from app.admin import bp
 from app.auth import admin_required
 from app.extensions import db
-from app.models import User
+from app.models import Borrow, User
 
 
 @bp.route("/admin")
 @admin_required
 def dashboard():
     return render_template("admin/dashboard.html")
+
+
+@bp.route("/admin/borrowers")
+@admin_required
+def borrowers():
+    users = User.query.options(
+        selectinload(User.borrows).selectinload(Borrow.book)
+    ).order_by(User.created_at.desc()).all()
+    return render_template("admin/borrowers.html", users=users)
 
 
 @bp.route("/admin/users")

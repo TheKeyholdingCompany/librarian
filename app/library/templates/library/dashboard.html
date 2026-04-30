@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}My Dashboard — TKC Library{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .brand { margin-bottom: 1.5rem; }
+  .card { padding: 2rem; }
+  h1 { margin-top: 0; }
+  .stats { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .stat { background: #f8f9fa; border-radius: 10px; padding: 1rem; flex: 1 1 220px; }
+  .stat small { display: block; color: var(--muted); margin-bottom: 0.5rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { padding: 0.75rem; border-bottom: 1px solid var(--border); text-align: left; }
+  th { background: #f8f9fa; font-weight: 600; }
+  .status-active { color: #1f8a70; font-weight: 600; }
+  .status-returned { color: #555; }
+  .muted { color: var(--muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="brand">TKC Library</div>
+  <div class="card">
+    <h1>My Borrower Dashboard</h1>
+    <p>Here are the books you have borrowed and their current status.</p>
+    <p><a href="{{ url_for('library.index') }}">← Back to library</a></p>
+
+    {% if user %}
+      <div class="stats">
+        <div class="stat">
+          <small>Account</small>
+          <strong>{{ user.username }}</strong><br>
+          <span class="muted">{{ user.email }}</span>
+        </div>
+        <div class="stat">
+          <small>Total borrows</small>
+          <strong>{{ user.borrows|length }}</strong>
+        </div>
+        <div class="stat">
+          <small>Currently borrowed</small>
+          <strong>{{ user.borrows|selectattr('returned_at', 'equalto', none)|list|length }}</strong>
+        </div>
+      </div>
+
+      {% if borrows %}
+        <table>
+          <thead>
+            <tr>
+              <th>Book</th>
+              <th>Borrowed</th>
+              <th>Due Date</th>
+              <th>Returned</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for borrow in borrows %}
+              <tr>
+                <td>{{ borrow.book.name }}</td>
+                <td>{{ borrow.borrowed_at.strftime('%Y-%m-%d') }}</td>
+                <td>{{ borrow.due_date.strftime('%Y-%m-%d') if borrow.due_date else '—' }}</td>
+                <td>{% if borrow.returned_at %}{{ borrow.returned_at.strftime('%Y-%m-%d') }}{% else %}&mdash;{% endif %}</td>
+                <td class="{% if borrow.returned_at %}status-returned{% else %}status-active{% endif %}">
+                  {% if borrow.returned_at %}Returned{% else %}Borrowed{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">You have no borrow records yet.</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">No borrower account found for your login.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
