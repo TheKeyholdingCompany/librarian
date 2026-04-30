@@ -99,7 +99,6 @@ def index():
     return render_template(
         "library/index.html",
         books=books,
-        search_query=search_query,
         book_status=book_status,
         favorite_book_ids=favorite_book_ids,
         book_ratings=book_ratings,

@@ -288,23 +288,17 @@
     <p class="muted">Flask + PostgreSQL is running.</p>
 
     <form method="GET" action="{{ url_for('library.index') }}" class="search-form" role="search">
-      <input type="search" name="q" value="{{ search_query|default('') }}" placeholder="Search books by title...">
+      <input
+        type="search"
+        name="q"
+        value="{{ search_query|default('') }}"
+        placeholder="Search by title or description"
+        aria-label="Search books">
       <button type="submit">Search</button>
       <a href="{{ url_for('library.index') }}" class="clear-button">Clear</a>
     </form>
 
     <h2>Books</h2>
-    <form class="search-bar" method="GET" action="{{ url_for('library.index') }}">
-      <input
-        type="search"
-        name="q"
-        class="search-input"
-        placeholder="Search by title or description"
-        value="{{ search_query|default('') }}"
-        aria-label="Search books"
-      />
-      <button type="submit" class="search-btn">Search</button>
-    </form>
     {% if session.get('role') == 'admin' %}
     <div class="actions">
       <a href="{{ url_for('library.add_book') }}">+ Add Book</a>
@@ -528,14 +522,4 @@ window.onclick = function(event) {
 }
 </script>
 
-<<<<<<< HEAD
-
-
-
-
-
-
 {% endblock %}
-=======
-{% endblock %}
->>>>>>> a3b6f6ad21358e9a7b1fc76f23805472857f9da6
