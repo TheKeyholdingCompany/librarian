@@ -208,6 +208,34 @@
               <div class="book-title">{{ book.name }}</div>
               <div class="book-meta">Added {{ book.created_at.strftime('%Y-%m-%d') }}</div>
               
+              <!-- Rating Display -->
+              <div class="book-rating" style="margin: 0.5rem 0;">
+                {% if book_ratings[book.id] %}
+                  <div class="stars-display">
+                    {% for i in range(1, 6) %}
+                      {% if i <= book_ratings[book.id] %}
+                        ★
+                      {% else %}
+                        ☆
+                      {% endif %}
+                    {% endfor %}
+                    <span style="margin-left: 0.5rem; font-size: 0.85rem; color: var(--muted);">
+                      {{ book_ratings[book.id] }}/5 ({{ book.ratings|length }} review{{ 's' if book.ratings|length != 1 else '' }})
+                    </span>
+                  </div>
+                {% else %}
+                  <div class="stars-display" style="color: #ddd;">
+                    ☆☆☆☆☆
+                    <span style="margin-left: 0.5rem; font-size: 0.85rem; color: var(--muted);">
+                      No ratings yet
+                    </span>
+                  </div>
+                {% endif %}
+                <button class="rate-btn" onclick="openRatingModal({{ book.id }}, {{ book.name | tojson }}, {{ user_rating_data[book.id] | tojson }})" style="margin-left: 0.5rem; background: none; border: none; color: var(--brand); cursor: pointer; font-size: 0.85rem; padding: 0; text-decoration: underline;">
+                  {% if user_rating_data[book.id] %}Edit rating{% else %}Rate this book{% endif %}
+                </button>
+              </div>
+              
               {% if book_status[book.id] %}
                 <div class="book-status-info borrowed">
                   Borrowed by {{ book_status[book.id].user.username }}
@@ -250,5 +278,97 @@
       <p class="muted">No books yet.</p>
     {% endif %}
   </div>
+
+  <!-- Rating Modal -->
+  <div id="rating-modal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: white; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 10px;">
+      <span class="close" onclick="closeRatingModal()" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+      <h3 id="modal-title">Rate Book</h3>
+      <form id="rating-form" method="POST">
+        <div style="margin: 20px 0;">
+          <label style="display: block; margin-bottom: 10px; font-weight: 600;">Rating:</label>
+          <div class="star-rating" style="font-size: 2rem; margin-bottom: 15px;">
+            <input type="radio" id="star5" name="rating" value="5" style="display: none;">
+            <label for="star5" style="cursor: pointer; color: #ddd;">★</label>
+            <input type="radio" id="star4" name="rating" value="4" style="display: none;">
+            <label for="star4" style="cursor: pointer; color: #ddd;">★</label>
+            <input type="radio" id="star3" name="rating" value="3" style="display: none;">
+            <label for="star3" style="cursor: pointer; color: #ddd;">★</label>
+            <input type="radio" id="star2" name="rating" value="2" style="display: none;">
+            <label for="star2" style="cursor: pointer; color: #ddd;">★</label>
+            <input type="radio" id="star1" name="rating" value="1" style="display: none;">
+            <label for="star1" style="cursor: pointer; color: #ddd;">★</label>
+          </div>
+        </div>
+        <div style="margin: 20px 0;">
+          <label for="review" style="display: block; margin-bottom: 10px; font-weight: 600;">Review (optional):</label>
+          <textarea id="review" name="review" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; resize: vertical;" placeholder="Share your thoughts about this book..."></textarea>
+        </div>
+        <div style="text-align: right;">
+          <button type="button" onclick="closeRatingModal()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Cancel</button>
+          <button type="submit" style="background: var(--brand); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Submit Rating</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
+
+<script>
+let currentBookId = null;
+
+function openRatingModal(bookId, bookName, userRating) {
+  currentBookId = bookId;
+  document.getElementById('modal-title').textContent = `Rate "${bookName}"`;
+  document.getElementById('rating-form').action = `/rate/${bookId}`;
+  document.getElementById('rating-modal').style.display = 'block';
+  
+  // Reset form
+  document.getElementById('rating-form').reset();
+  document.querySelectorAll('.star-rating label').forEach(label => {
+    label.style.color = '#ddd';
+  });
+  
+  // Load existing rating if any
+  if (userRating) {
+    const starInput = document.getElementById(`star${userRating.rating}`);
+    if (starInput) {
+      starInput.checked = true;
+    }
+    updateStars(userRating.rating);
+    document.getElementById('review').value = userRating.review || '';
+  }
+}
+
+function closeRatingModal() {
+  document.getElementById('rating-modal').style.display = 'none';
+  currentBookId = null;
+}
+
+// Star rating interaction
+document.querySelectorAll('.star-rating label').forEach((label, index) => {
+  label.addEventListener('click', () => {
+    const rating = 5 - index;
+    updateStars(rating);
+  });
+});
+
+function updateStars(rating) {
+  document.querySelectorAll('.star-rating label').forEach((label, index) => {
+    if (index < rating) {
+      label.style.color = '#ffc107';
+    } else {
+      label.style.color = '#ddd';
+    }
+  });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('rating-modal');
+  if (event.target == modal) {
+    closeRatingModal();
+  }
+}
+</script>
+
 {% endblock %}

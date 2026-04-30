@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, session, flash
+from flask import render_template, redirect, url_for, session, flash, request
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import selectinload
 from werkzeug.security import generate_password_hash
@@ -10,7 +10,7 @@ from app.auth.decorators import login_required, admin_required
 from app.extensions import db
 from app.forms import BookForm
 from app.library import bp
-from app.models import Book, Borrow, User
+from app.models import Book, Borrow, User, Rating
 
 # Photo upload configuration
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "uploads")
@@ -25,15 +25,85 @@ def index():
     
     # Get borrow status for each book
     book_status = {}
+    book_ratings = {}
+    user_rating_data = {}
+    user_id = session.get("user_id")
+    
     for book in books:
+        # Borrow status
         active_borrow = db.session.scalars(
             db.select(Borrow).where(
                 (Borrow.book_id == book.id) & (Borrow.returned_at == None)
             )
         ).first()
         book_status[book.id] = active_borrow
+        
+        # Ratings
+        ratings = db.session.scalars(
+            db.select(Rating).where(Rating.book_id == book.id)
+        ).all()
+        if ratings:
+            avg_rating = sum(r.rating for r in ratings) / len(ratings)
+            book_ratings[book.id] = round(avg_rating, 1)
+        else:
+            book_ratings[book.id] = None
+            
+        # User's rating data for the current book
+        if user_id:
+            user_rating = db.session.scalars(
+                db.select(Rating).where(
+                    (Rating.book_id == book.id) & (Rating.user_id == user_id)
+                )
+            ).first()
+            user_rating_data[book.id] = {
+                "rating": user_rating.rating,
+                "review": user_rating.review,
+            } if user_rating else None
     
-    return render_template("library/index.html", books=books, book_status=book_status)
+    return render_template("library/index.html", books=books, book_status=book_status, book_ratings=book_ratings, user_rating_data=user_rating_data)
+
+
+@bp.route("/rate/<int:book_id>", methods=["POST"])
+@login_required
+def rate_book(book_id):
+    user_id = session.get("user_id")
+    if not user_id:
+        flash("You must be logged in to rate books.", "error")
+        return redirect(url_for("library.index"))
+    
+    rating_value = request.form.get("rating", type=int)
+    review_text = request.form.get("review", "").strip()
+    
+    if not rating_value or rating_value < 1 or rating_value > 5:
+        flash("Please provide a valid rating (1-5 stars).", "error")
+        return redirect(url_for("library.index"))
+    
+    # Check if user already rated this book
+    existing_rating = db.session.scalars(
+        db.select(Rating).where(
+            (Rating.book_id == book_id) & (Rating.user_id == user_id)
+        )
+    ).first()
+    
+    if existing_rating:
+        # Update existing rating
+        existing_rating.rating = rating_value
+        existing_rating.review = review_text if review_text else None
+        existing_rating.updated_at = datetime.now(timezone.utc)
+        flash("Your rating has been updated.", "success")
+    else:
+        # Create new rating
+        new_rating = Rating(
+            book_id=book_id,
+            user_id=user_id,
+            rating=rating_value,
+            review=review_text if review_text else None
+        )
+        db.session.add(new_rating)
+        flash("Thank you for rating this book!", "success")
+    
+    db.session.commit()
+    return redirect(url_for("library.index"))
 
 
 @bp.route("/health")
