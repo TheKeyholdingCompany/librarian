@@ -37,7 +37,12 @@ def _get_or_create_user(username):
 @bp.route("/")
 @login_required
 def index():
-    books = db.session.scalars(db.select(Book).order_by(Book.created_at.desc())).all()
+    search_query = request.args.get("q", "").strip()
+    books_query = db.select(Book).order_by(Book.created_at.desc())
+    if search_query:
+        books_query = books_query.where(Book.name.ilike(f"%{search_query}%"))
+
+    books = db.session.scalars(books_query).all()
     username = session.get("username")
     favorite_book_ids = set()
     if username:
@@ -88,6 +93,7 @@ def index():
     return render_template(
         "library/index.html",
         books=books,
+        search_query=search_query,
         book_status=book_status,
         favorite_book_ids=favorite_book_ids,
         book_ratings=book_ratings,

@@ -50,6 +50,76 @@
     background: var(--brand-dark);
     text-decoration: none;
   }
+  .search-form {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    max-width: 520px;
+  }
+  .search-form input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    color: var(--text);
+    background: white;
+  }
+  .search-form button {
+    padding: 0.75rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--brand);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .search-form button:hover {
+    background: var(--brand-dark);
+  }
+  .search-form {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0 0.75rem;
+    width: 100%;
+  }
+  .search-form input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    color: var(--text);
+    background: white;
+  }
+  .search-form button {
+    padding: 0.75rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--brand);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .search-form button:hover {
+    background: var(--brand-dark);
+  }
+  .search-form .clear-button {
+    padding: 0.75rem 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    color: var(--text);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .search-form .clear-button:hover {
+    background: #f0f1f4;
+  }
   .book-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -70,13 +140,12 @@
   .book-photo {
     width: 100%;
     height: 200px;
-    background: #e0e0e0;
+    background: #f8f9fa;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
-    color: #999;
     overflow: hidden;
+    border-bottom: 1px solid var(--border);
   }
   .book-photo img {
     width: 100%;
@@ -218,6 +287,12 @@
     <h1>TKC Library</h1>
     <p class="muted">Flask + PostgreSQL is running.</p>
 
+    <form method="GET" action="{{ url_for('library.index') }}" class="search-form" role="search">
+      <input type="search" name="q" value="{{ search_query|default('') }}" placeholder="Search books by title...">
+      <button type="submit">Search</button>
+      <a href="{{ url_for('library.index') }}" class="clear-button">Clear</a>
+    </form>
+
     <h2>Books</h2>
     {% if session.get('role') == 'admin' %}
     <div class="actions">
@@ -232,7 +307,7 @@
               {% if book.photo_filename %}
                 <img src="{{ url_for('static', filename='uploads/' + book.photo_filename) }}" alt="{{ book.name }}">
               {% else %}
-                📖
+                <img src="{{ url_for('static', filename='images/default-book-cover.svg') }}" alt="Default book cover">
               {% endif %}
             </div>
             <div class="book-details">
@@ -406,5 +481,11 @@ window.onclick = function(event) {
   }
 }
 </script>
+
+
+
+
+
+
 
 {% endblock %}
