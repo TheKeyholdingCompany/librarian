@@ -2,6 +2,12 @@ from datetime import datetime, timezone
 
 from app.extensions import db
 
+favorites = db.Table(
+    "favorites",
+    db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
+    db.Column("book_id", db.Integer, db.ForeignKey("books.id"), primary_key=True),
+)
+
 
 class User(db.Model):
     __tablename__ = "users"
@@ -19,6 +25,13 @@ class User(db.Model):
 
     # Relationship to borrows
     borrows = db.relationship("Borrow", backref="user", lazy=True, cascade="all, delete-orphan")
+    # Relationship to favourite books
+    favorites = db.relationship(
+        "Book",
+        secondary=favorites,
+        lazy="subquery",
+        backref=db.backref("favorited_by", lazy="subquery"),
+    )
 
     def __repr__(self):
         return f"<User {self.id} {self.username!r}>"

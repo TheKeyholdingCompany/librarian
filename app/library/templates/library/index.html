@@ -121,6 +121,24 @@
   .delete-btn:hover {
     background: #a01729;
   }
+  .favorite-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    color: var(--brand);
+    border: 1px solid var(--brand);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .favorite-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+  .favorite-btn.active {
+    background: var(--brand);
+    color: white;
+  }
 </style>
 {% endblock %}
 
@@ -177,6 +195,11 @@
               <form method="POST" action="{{ url_for('library.borrow_book', book_id=book.id) }}" style="display:inline">
                 <button type="submit" class="borrow-btn" {% if book_status[book.id] %}disabled{% endif %}>
                   {% if book_status[book.id] %}Borrowed{% else %}Borrow{% endif %}
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('library.favorite_book', book_id=book.id) }}" style="display:inline">
+                <button type="submit" class="favorite-btn {% if book.id in favorite_book_ids|default([]) %}active{% endif %}">
+                  {% if book.id in favorite_book_ids|default([]) %}♥ Favourite{% else %}♡ Favourite{% endif %}
                 </button>
               </form>
               {% if session.get('role') == 'admin' %}
