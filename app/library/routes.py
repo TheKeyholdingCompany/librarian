@@ -169,10 +169,6 @@ def rate_book(book_id):
 
 @bp.route("/health")
 def health():
-
-
-@bp.route("/health")
-def health():
     db.session.execute(db.text("SELECT 1"))
     return {"status": "ok"}
 
