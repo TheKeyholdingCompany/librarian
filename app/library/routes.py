@@ -1,5 +1,7 @@
 from flask import render_template, redirect, url_for, session, flash
 from datetime import datetime, timezone, timedelta
+from sqlalchemy.orm import selectinload
+from werkzeug.security import generate_password_hash
 
 from app.auth.decorators import login_required, admin_required
 from app.extensions import db
@@ -30,6 +32,23 @@ def index():
 def health():
     db.session.execute(db.text("SELECT 1"))
     return {"status": "ok"}
+
+
+@bp.route("/dashboard")
+@login_required
+def dashboard():
+    username = session.get("username")
+    user = db.session.scalars(
+        db.select(User)
+        .options(selectinload(User.borrows).selectinload(Borrow.book))
+        .where(User.username == username)
+    ).first()
+
+    borrows = []
+    if user:
+        borrows = sorted(user.borrows, key=lambda borrow: borrow.borrowed_at or datetime.min, reverse=True)
+
+    return render_template("library/dashboard.html", user=user, borrows=borrows)
 
 
 
@@ -63,7 +82,12 @@ def borrow_book(book_id):
     user = db.session.scalars(db.select(User).where(User.username == username)).first()
     if not user:
         # Create new user with default email based on username
-        user = User(username=username, email=f"{username}@library.local")
+        user = User(
+            username=username,
+            email=f"{username}@library.local",
+            password_hash=generate_password_hash(username),
+            role="borrower",
+        )
         db.session.add(user)
         db.session.commit()
     
