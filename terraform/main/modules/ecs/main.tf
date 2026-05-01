@@ -114,6 +114,9 @@ resource "aws_ecs_task_definition" "api" {
       { name = "DB_HOST", value = var.db_address },
       { name = "DB_PORT", value = tostring(var.db_port) },
       { name = "DB_NAME", value = var.db_name },
+      { name = "AWS_REGION", value = var.region },
+      { name = "S3_BUCKET", value = var.s3_uploads_bucket },
+      { name = "S3_PUBLIC_BASE_URL", value = var.s3_uploads_public_base_url },
     ]
 
     # `valueFrom` accepts a Secrets Manager ARN with a JSON-pointer suffix:
@@ -167,4 +170,9 @@ output "cluster_name" {
 
 output "service_name" {
   value = aws_ecs_service.api.name
+}
+
+output "task_role_name" {
+  value       = aws_iam_role.ecs_task.name
+  description = "Name of the IAM role assumed by the running container; attach extra policies to grant the app new permissions."
 }

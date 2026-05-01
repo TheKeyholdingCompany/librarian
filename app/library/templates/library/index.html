@@ -317,7 +317,7 @@
           <div class="book-card">
             <div class="book-photo">
               {% if book.photo_filename %}
-                <img src="{{ url_for('static', filename='uploads/' + book.photo_filename) }}" alt="{{ book.name }}">
+                <img src="{{ book_image_url(book.photo_filename) }}" alt="{{ book.name }}">
               {% else %}
                 <img src="{{ url_for('static', filename='images/default-book-cover.svg') }}" alt="Default book cover">
               {% endif %}

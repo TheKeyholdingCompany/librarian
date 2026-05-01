@@ -15,6 +15,8 @@ module "app" {
   hosted_zone_domain = local.hosted_zone_domain
   domain_name        = local.domain_name
 
+  uploads_bucket_name = "tkc-librarian-uploads-services"
+
   providers = {
     aws           = aws
     aws.us_east_1 = aws.us_east_1
