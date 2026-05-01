@@ -81,18 +81,8 @@ def presign_put(extension: str) -> dict[str, str]:
 
 
 def public_url(key: str) -> str:
-    """Resolve a stored S3 key to a public HTTPS URL.
-
-    Legacy-filename shim: rows written by the pre-S3 code stored bare
-    filenames like ``<uuid>_<name>.png``. We deploy this code before
-    running ``scripts/migrate_uploads_to_s3.py``, so during the cutover
-    window we'll see both bare filenames and ``books/<uuid>.<ext>`` keys.
-    Once the migration runs, every row carries the prefix and the
-    ``"/" not in key`` branch becomes dead code — remove it then.
-    """
+    """Resolve a stored S3 key to a public HTTPS URL."""
     if not key:
         return ""
-    if "/" not in key:
-        key = f"{UPLOAD_PREFIX}{key}"
     base = current_app.config["S3_PUBLIC_BASE_URL"].rstrip("/")
     return f"{base}/{key}"
