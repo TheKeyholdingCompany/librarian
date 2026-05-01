@@ -59,6 +59,15 @@ module "alb" {
   security_group_id = module.vpc.alb_security_group_id
 }
 
+# ── S3 uploads ──────────────────────────────────────────────
+
+module "s3_uploads" {
+  source      = "./modules/s3_uploads"
+  bucket_name = var.uploads_bucket_name
+  name        = var.name
+  env         = var.env
+}
+
 # ── ECS ─────────────────────────────────────────────────────
 
 module "ecs" {
@@ -85,6 +94,17 @@ module "ecs" {
   db_port     = module.rds.port
   db_username = module.secrets.rds_username
   db_name     = var.db_name
+
+  s3_uploads_bucket          = module.s3_uploads.bucket_name
+  s3_uploads_public_base_url = "https://${module.s3_uploads.bucket_regional_domain_name}"
+}
+
+# Grant the running container PutObject on the uploads prefix. The policy
+# document lives in the s3_uploads module (it knows the bucket ARN); the
+# attachment lives here because both modules' outputs are visible at root.
+resource "aws_iam_role_policy_attachment" "ecs_task_s3_uploads" {
+  role       = module.ecs.task_role_name
+  policy_arn = module.s3_uploads.put_object_policy_arn
 }
 
 # ── CloudFront ──────────────────────────────────────────────

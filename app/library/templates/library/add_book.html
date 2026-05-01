@@ -136,9 +136,9 @@
   <div class="card">
     <h1>{{ form_title or 'Add a New Book' }}</h1>
     
-    <form method="POST" novalidate enctype="multipart/form-data">
+    <form method="POST" novalidate id="add-book-form">
       {{ form.hidden_tag() }}
-      
+
       <div class="form-group">
         {{ form.name.label }}
         {{ form.name(class="form-control") }}
@@ -152,7 +152,7 @@
           </div>
         {% endif %}
       </div>
-      
+
       <div class="form-group">
         {{ form.description.label }}
         {{ form.description(class="form-control") }}
@@ -166,14 +166,16 @@
           </div>
         {% endif %}
       </div>
-      
+
       <div class="form-group">
-        {{ form.photo.label }}
-        {{ form.photo(class="form-control") }}
-        {% if form.photo.errors %}
+        <label for="photo-file">Book Photo</label>
+        <input type="file" id="photo-file" accept="{% for ext in allowed_extensions %}.{{ ext }}{{ ',' if not loop.last }}{% endfor %}">
+        {{ form.photo_key() }}
+        <p id="photo-status" class="form-errors" style="margin: 0; color: var(--muted);"></p>
+        {% if form.photo_key.errors %}
           <div class="form-errors">
             <ul>
-              {% for error in form.photo.errors %}
+              {% for error in form.photo_key.errors %}
                 <li>{{ error }}</li>
               {% endfor %}
             </ul>
@@ -184,12 +186,66 @@
       {% if book and book.photo_filename %}
         <div class="form-group">
           <label>Current Cover</label>
-          <img src="{{ url_for('static', filename='uploads/' + book.photo_filename) }}" alt="{{ book.name }}" style="max-width: 200px; display: block; border-radius: 8px; margin-top: 0.5rem;" />
+          <img src="{{ book_image_url(book.photo_filename) }}" alt="{{ book.name }}" style="max-width: 200px; display: block; border-radius: 8px; margin-top: 0.5rem;" />
         </div>
       {% endif %}
-      
-      {{ form.submit() }}
+
+      {{ form.submit(id="submit-btn") }}
     </form>
   </div>
 </div>
+
+<script>
+  (function () {
+    const fileInput = document.getElementById("photo-file");
+    const keyInput = document.getElementById("photo_key");
+    const status = document.getElementById("photo-status");
+    const submitBtn = document.getElementById("submit-btn");
+
+    function setStatus(text, isError) {
+      status.textContent = text;
+      status.style.color = isError ? "#c41e3a" : "var(--muted)";
+    }
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) {
+        keyInput.value = "";
+        setStatus("", false);
+        return;
+      }
+
+      const ext = (file.name.split(".").pop() || "").toLowerCase();
+      submitBtn.disabled = true;
+      setStatus("Requesting upload URL…", false);
+
+      try {
+        const resp = await fetch(`{{ url_for('library.photo_upload_url') }}?ext=${encodeURIComponent(ext)}`);
+        if (!resp.ok) {
+          const body = await resp.json().catch(() => ({}));
+          throw new Error(body.error || `Upload URL request failed (${resp.status})`);
+        }
+        const { url, key, content_type } = await resp.json();
+
+        setStatus("Uploading to S3…", false);
+        const putResp = await fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": content_type },
+          body: file,
+        });
+        if (!putResp.ok) {
+          throw new Error(`S3 upload failed (${putResp.status})`);
+        }
+
+        keyInput.value = key;
+        setStatus("Upload complete.", false);
+      } catch (err) {
+        keyInput.value = "";
+        setStatus(err.message, true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  })();
+</script>
 {% endblock %}

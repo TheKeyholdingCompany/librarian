@@ -2,6 +2,7 @@ from flask import Flask
 
 from config import Config
 from app.extensions import db, migrate
+from app.storage import public_url
 
 
 def create_app(config_class=Config):
@@ -21,6 +22,11 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_bp)
     app.register_blueprint(about_bp)
     app.register_blueprint(borrower_bp)
+
+    # Templates resolve a book's S3 key to its public URL via this helper.
+    @app.context_processor
+    def inject_image_helpers():
+        return {"book_image_url": public_url}
 
     from app import models  # noqa: F401  ensure models are registered with SQLAlchemy
 

@@ -14,6 +14,13 @@ export DATABASE_URL="postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:$
 # task sees `head` and no-ops.
 flask db upgrade
 
+# One-shot data migration: copy the legacy disk-based book covers into S3
+# and prefix the DB rows with `books/`. Idempotent — re-running is a fast
+# no-op once every file is in S3 and every row is prefixed. Concurrent
+# boots are safe because both phases tolerate redoing already-done work.
+# Removable once `app/static/uploads/` is deleted from the repo.
+python scripts/migrate_uploads_to_s3.py
+
 # `--access-logfile -` writes access logs to stdout so they land in
 # CloudWatch via the awslogs driver. 3 sync workers fits 1 vCPU comfortably.
 exec gunicorn \

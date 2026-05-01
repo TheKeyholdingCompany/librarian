@@ -16,3 +16,10 @@ venv/
 
 # Flask
 instance/
+
+# Terraform — providers/modules are re-downloaded on `terraform init`. The
+# lock file (.terraform.lock.hcl) IS committed: it pins provider versions
+# across machines.
+.terraform/
+*.tfstate
+*.tfstate.backup

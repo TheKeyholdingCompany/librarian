@@ -1,30 +1,15 @@
-from flask import render_template, redirect, url_for, session, flash, request
+from flask import render_template, redirect, url_for, session, flash, request, jsonify
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 from werkzeug.security import generate_password_hash
-from werkzeug.utils import secure_filename
-import os
-from uuid import uuid4
 
 from app.auth.decorators import login_required, admin_required
 from app.extensions import db
 from app.forms import BookForm
 from app.library import bp
 from app.models import Book, Borrow, User, Rating
-
-# Photo upload configuration
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "uploads")
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
-
-def _save_book_photo(file):
-    filename = secure_filename(file.filename)
-    filename = f"{uuid4().hex}_{filename}"
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(filepath)
-    return filename
+from app.storage import presign_put, UnsupportedImageType, ALLOWED_IMAGE_TYPES
 
 
 def _get_or_create_user(username):
@@ -252,12 +237,11 @@ def add_book():
     form = BookForm()
     form.submit.label.text = "Add Book"
     if form.validate_on_submit():
-        book = Book(name=form.name.data, description=form.description.data)
-        
-        # Handle file upload
-        if form.photo.data:
-            book.photo_filename = _save_book_photo(form.photo.data)
-        
+        book = Book(
+            name=form.name.data,
+            description=form.description.data,
+            photo_filename=form.photo_key.data or None,
+        )
         db.session.add(book)
         db.session.commit()
         flash(f"Book '{book.name}' added successfully!", "success")
@@ -266,6 +250,7 @@ def add_book():
         "library/add_book.html",
         form=form,
         form_title="Add a New Book",
+        allowed_extensions=sorted(ALLOWED_IMAGE_TYPES.keys()),
     )
 
 
@@ -277,24 +262,17 @@ def edit_book(book_id):
         flash("Book not found.", "error")
         return redirect(url_for("library.index"))
 
+    # BookForm.photo_key is a HiddenField; obj=book preloads name/description
+    # but leaves photo_key empty so the form only overwrites the cover when
+    # the admin actually picks a new file.
     form = BookForm(obj=book)
     form.submit.label.text = "Save Changes"
 
     if form.validate_on_submit():
         book.name = form.name.data
         book.description = form.description.data
-
-        if form.photo.data:
-            new_filename = _save_book_photo(form.photo.data)
-            if book.photo_filename:
-                old_path = os.path.join(UPLOAD_FOLDER, book.photo_filename)
-                try:
-                    if os.path.exists(old_path):
-                        os.remove(old_path)
-                except OSError:
-                    pass
-            book.photo_filename = new_filename
-
+        if form.photo_key.data:
+            book.photo_filename = form.photo_key.data
         db.session.commit()
         flash(f"Book '{book.name}' updated successfully!", "success")
         return redirect(url_for("library.index"))
@@ -304,7 +282,24 @@ def edit_book(book_id):
         form=form,
         book=book,
         form_title="Edit Book",
+        allowed_extensions=sorted(ALLOWED_IMAGE_TYPES.keys()),
     )
+
+
+@bp.route("/photo-upload-url")
+@admin_required
+def photo_upload_url():
+    """Mint a short-lived presigned PUT URL for the add/edit book form's JS.
+
+    The browser sends ?ext=jpg, gets back {url, key, content_type}, PUTs the
+    file directly to S3, then submits the form with `key` as a hidden field.
+    The Flask process never sees the bytes.
+    """
+    ext = request.args.get("ext", "")
+    try:
+        return jsonify(presign_put(ext))
+    except UnsupportedImageType:
+        return jsonify({"error": f"Unsupported file type: {ext!r}"}), 400
 
 
 @bp.route("/<int:book_id>/borrow", methods=["POST"])

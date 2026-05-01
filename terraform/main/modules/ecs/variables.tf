@@ -54,3 +54,13 @@ variable "db_username" {
 variable "db_name" {
   type = string
 }
+
+variable "s3_uploads_bucket" {
+  type        = string
+  description = "Name of the S3 bucket the API uses for image uploads (passed in as S3_BUCKET env var)"
+}
+
+variable "s3_uploads_public_base_url" {
+  type        = string
+  description = "Public HTTPS base URL for serving uploaded images (passed in as S3_PUBLIC_BASE_URL env var). Trailing slash optional."
+}

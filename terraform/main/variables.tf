@@ -28,6 +28,13 @@ variable "db_name" {
   description = "Postgres database name on the RDS instance"
 }
 
+# --- S3 uploads ---
+
+variable "uploads_bucket_name" {
+  type        = string
+  description = "Globally unique S3 bucket name for image uploads (e.g. tkc-librarian-uploads-services)"
+}
+
 # --- Lifecycle ---
 
 variable "force_destroy" {
