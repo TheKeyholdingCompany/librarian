@@ -24,4 +24,11 @@ def create_app(config_class=Config):
 
     from app import models  # noqa: F401  ensure models are registered with SQLAlchemy
 
+    # ALB target-group probe. Must be unauthenticated — every other route is
+    # behind @login_required, so without this the target group health check
+    # gets a 302 to /auth/login and the task is marked unhealthy.
+    @app.route("/health")
+    def health():
+        return {"status": "ok"}, 200
+
     return app

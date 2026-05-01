@@ -1,0 +1,99 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/plan.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  AWS_REGION: eu-west-1
+  TF_DIR: terraform/main/envs/services
+
+jobs:
+  plan:
+    name: Plan
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    environment: services
+    env:
+      AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: hashicorp/setup-terraform@v4
+
+      - name: Format check
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+
+      - name: Init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_DIR }}
+
+      - name: Validate
+        run: terraform validate
+        working-directory: ${{ env.TF_DIR }}
+
+      - name: Plan
+        id: plan
+        run: terraform plan -no-color -input=false 2>&1 | tee "$RUNNER_TEMP/plan.txt"
+        working-directory: ${{ env.TF_DIR }}
+
+      # Plans can be huge; truncate at 60k chars to stay under GitHub's
+      # 65,536-char comment limit. Update-in-place keeps the PR thread tidy
+      # across pushes — one plan comment, not N.
+      - name: Comment plan on PR
+        if: always() && github.event_name == 'pull_request'
+        env:
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            const raw = fs.readFileSync(process.env.RUNNER_TEMP + '/plan.txt', 'utf8');
+            const plan = raw.length > 60000 ? raw.substring(0, 60000) + '\n\n... truncated ...' : raw;
+            const outcome = process.env.PLAN_OUTCOME;
+            const icon = outcome === 'success' ? '✅' : '❌';
+
+            const body = [
+              `### ${icon} Terraform Plan`,
+              '',
+              '<details><summary>Show plan</summary>',
+              '',
+              '```',
+              plan,
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Terraform Plan')
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

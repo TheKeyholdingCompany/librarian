@@ -1,0 +1,200 @@
+name: Deploy Librarian
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - "app/**"
+      - "migrations/**"
+      - "wsgi.py"
+      - "config.py"
+      - "requirements.txt"
+      - "Dockerfile"
+      - "entrypoint.sh"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+# Only one deploy can run at a time. We don't cancel in-progress runs because
+# tearing down a half-applied terraform state mid-flight is worse than
+# letting it finish.
+concurrency:
+  group: deploy-services
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: eu-west-1
+  STATE_BUCKET: tkc-librarian-terraform-state
+
+jobs:
+  # ── Detect what changed ─────────────────────────────────
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      infra: ${{ steps.filter.outputs.infra }}
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            infra:
+              - 'terraform/**'
+              - '.github/workflows/deploy.yml'
+            app:
+              - 'app/**'
+              - 'migrations/**'
+              - 'wsgi.py'
+              - 'config.py'
+              - 'requirements.txt'
+              - 'Dockerfile'
+              - 'entrypoint.sh'
+
+  # ── Bootstrap Terraform state bucket ────────────────────
+  # First-run-only: creates the S3 bucket the main stack uses for state.
+  # Becomes a no-op afterward via the head-bucket guard.
+  bootstrap-state-s3:
+    name: Bootstrap State
+    runs-on: ubuntu-latest
+    environment: services
+    env:
+      AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check if bootstrap is needed
+        id: check
+        run: |
+          if aws s3api head-bucket --bucket "$STATE_BUCKET" 2>/dev/null; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: hashicorp/setup-terraform@v4
+        if: steps.check.outputs.needed == 'true'
+
+      - name: Bootstrap
+        if: steps.check.outputs.needed == 'true'
+        run: terraform init -input=false && terraform apply -auto-approve -input=false
+        working-directory: terraform/bootstrap-state-s3
+
+  # ── Deploy infrastructure ───────────────────────────────
+  infra:
+    name: Deploy Infrastructure
+    needs: [bootstrap-state-s3, changes]
+    if: needs.changes.outputs.infra == 'true' || needs.changes.outputs.app == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: services
+    env:
+      AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    outputs:
+      ecr_repo: ${{ steps.outputs.outputs.ecr_repo }}
+      cloudfront_distribution_id: ${{ steps.outputs.outputs.cloudfront_distribution_id }}
+      ecs_cluster: ${{ steps.outputs.outputs.ecs_cluster }}
+      ecs_service: ${{ steps.outputs.outputs.ecs_service }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - run: terraform init -input=false
+        working-directory: terraform/main/envs/services
+
+      - run: terraform plan -out=tfplan -input=false
+        working-directory: terraform/main/envs/services
+
+      - run: terraform apply -input=false tfplan
+        working-directory: terraform/main/envs/services
+
+      - name: Get outputs
+        id: outputs
+        run: |
+          {
+            echo "ecr_repo=$(terraform output -raw ecr_api_repository_url)"
+            echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)"
+            echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)"
+            echo "ecs_service=$(terraform output -raw ecs_service_name)"
+          } >> "$GITHUB_OUTPUT"
+        working-directory: terraform/main/envs/services
+
+  # ── Build & deploy app ──────────────────────────────────
+  deploy:
+    name: Deploy App
+    needs: [infra, changes]
+    if: needs.changes.outputs.app == 'true' && needs.infra.result == 'success'
+    runs-on: ubuntu-latest
+    environment: services
+    env:
+      AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      COMMIT_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v6
+
+      # ECR repo URL is normally produced by the infra job, but if only
+      # app/** changed and the infra job was skipped, fall back to a
+      # describe-repositories lookup so this job can still run.
+      - name: Resolve ECR repo URL
+        id: ecr-url
+        env:
+          INFRA_ECR_REPO: ${{ needs.infra.outputs.ecr_repo }}
+        run: |
+          if [ -n "$INFRA_ECR_REPO" ]; then
+            echo "url=$INFRA_ECR_REPO" >> "$GITHUB_OUTPUT"
+          else
+            REPO=$(aws ecr describe-repositories \
+              --repository-names librarian-services-api \
+              --query 'repositories[0].repositoryUri' \
+              --output text --region "$AWS_REGION")
+            echo "url=$REPO" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Login to ECR
+        env:
+          ECR_URL: ${{ steps.ecr-url.outputs.url }}
+        run: |
+          REGISTRY=$(echo "$ECR_URL" | cut -d/ -f1)
+          aws ecr get-login-password --region "$AWS_REGION" | \
+            docker login --username AWS --password-stdin "$REGISTRY"
+
+      - name: Build & push Docker image
+        env:
+          ECR_URL: ${{ steps.ecr-url.outputs.url }}
+        run: |
+          docker build -t "$ECR_URL:$COMMIT_SHA" -t "$ECR_URL:latest" .
+          docker push "$ECR_URL:$COMMIT_SHA"
+          docker push "$ECR_URL:latest"
+
+      # ECS doesn't auto-redeploy when a new image lands at `:latest` —
+      # nothing in the task definition changed. `force-new-deployment`
+      # tells the service to roll tasks even though the spec is identical.
+      - name: Deploy to ECS
+        env:
+          ECS_CLUSTER: ${{ needs.infra.outputs.ecs_cluster }}
+          ECS_SERVICE: ${{ needs.infra.outputs.ecs_service }}
+        run: |
+          aws ecs update-service \
+            --cluster "${ECS_CLUSTER:-librarian-services}" \
+            --service "${ECS_SERVICE:-librarian-services-api}" \
+            --force-new-deployment \
+            --region "$AWS_REGION"
+
+      - name: Wait for deployment
+        env:
+          ECS_CLUSTER: ${{ needs.infra.outputs.ecs_cluster }}
+          ECS_SERVICE: ${{ needs.infra.outputs.ecs_service }}
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${ECS_CLUSTER:-librarian-services}" \
+            --services "${ECS_SERVICE:-librarian-services-api}" \
+            --region "$AWS_REGION"
+        timeout-minutes: 10
