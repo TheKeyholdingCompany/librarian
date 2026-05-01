@@ -19,6 +19,14 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 
+def _save_book_photo(file):
+    filename = secure_filename(file.filename)
+    filename = f"{uuid4().hex}_{filename}"
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(filepath)
+    return filename
+
+
 def _get_or_create_user(username):
     if not username:
         return None
@@ -242,24 +250,61 @@ def view_borrower_dashboard(user_id):
 @admin_required
 def add_book():
     form = BookForm()
+    form.submit.label.text = "Add Book"
     if form.validate_on_submit():
         book = Book(name=form.name.data, description=form.description.data)
         
         # Handle file upload
         if form.photo.data:
-            file = form.photo.data
-            filename = secure_filename(file.filename)
-            # Add unique prefix to avoid name collisions
-            filename = f"{uuid4().hex}_{filename}"
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
-            file.save(filepath)
-            book.photo_filename = filename
+            book.photo_filename = _save_book_photo(form.photo.data)
         
         db.session.add(book)
         db.session.commit()
         flash(f"Book '{book.name}' added successfully!", "success")
         return redirect(url_for("library.index"))
-    return render_template("library/add_book.html", form=form)
+    return render_template(
+        "library/add_book.html",
+        form=form,
+        form_title="Add a New Book",
+    )
+
+
+@bp.route("/<int:book_id>/edit", methods=["GET", "POST"])
+@admin_required
+def edit_book(book_id):
+    book = db.session.get(Book, book_id)
+    if not book:
+        flash("Book not found.", "error")
+        return redirect(url_for("library.index"))
+
+    form = BookForm(obj=book)
+    form.submit.label.text = "Save Changes"
+
+    if form.validate_on_submit():
+        book.name = form.name.data
+        book.description = form.description.data
+
+        if form.photo.data:
+            new_filename = _save_book_photo(form.photo.data)
+            if book.photo_filename:
+                old_path = os.path.join(UPLOAD_FOLDER, book.photo_filename)
+                try:
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                except OSError:
+                    pass
+            book.photo_filename = new_filename
+
+        db.session.commit()
+        flash(f"Book '{book.name}' updated successfully!", "success")
+        return redirect(url_for("library.index"))
+
+    return render_template(
+        "library/add_book.html",
+        form=form,
+        book=book,
+        form_title="Edit Book",
+    )
 
 
 @bp.route("/<int:book_id>/borrow", methods=["POST"])

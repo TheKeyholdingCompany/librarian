@@ -134,7 +134,7 @@
   <a href="{{ url_for('library.index') }}" class="back-link">← Back to Library</a>
 
   <div class="card">
-    <h1>Add a New Book</h1>
+    <h1>{{ form_title or 'Add a New Book' }}</h1>
     
     <form method="POST" novalidate enctype="multipart/form-data">
       {{ form.hidden_tag() }}
@@ -180,6 +180,13 @@
           </div>
         {% endif %}
       </div>
+
+      {% if book and book.photo_filename %}
+        <div class="form-group">
+          <label>Current Cover</label>
+          <img src="{{ url_for('static', filename='uploads/' + book.photo_filename) }}" alt="{{ book.name }}" style="max-width: 200px; display: block; border-radius: 8px; margin-top: 0.5rem;" />
+        </div>
+      {% endif %}
       
       {{ form.submit() }}
     </form>
