@@ -1,8 +1,8 @@
 """One-shot: copy app/static/uploads/* to S3 and prefix existing DB rows.
 
 Runs once per environment as part of the disk -> S3 cutover. Idempotent —
-re-running uploads only objects S3 doesn't already have, and updates only
-DB rows that don't yet carry the ``books/`` prefix.
+PutObject silently overwrites with the same content, and the DB phase
+only updates rows that don't yet carry the ``books/`` prefix.
 
 Usage::
 
@@ -22,7 +22,6 @@ import sys
 from pathlib import Path
 
 import boto3
-from botocore.exceptions import ClientError
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
@@ -44,16 +43,6 @@ def _s3_client(app):
     )
 
 
-def _exists(s3, bucket: str, key: str) -> bool:
-    try:
-        s3.head_object(Bucket=bucket, Key=key)
-        return True
-    except ClientError as e:
-        if e.response["Error"]["Code"] in ("404", "NoSuchKey", "NotFound"):
-            return False
-        raise
-
-
 def upload_files(app) -> int:
     if not UPLOADS_DIR.is_dir():
         print(f"No uploads directory at {UPLOADS_DIR} — nothing to copy.")
@@ -63,13 +52,14 @@ def upload_files(app) -> int:
     s3 = _s3_client(app)
     uploaded = 0
 
+    # No head_object precheck: the ECS task role is scoped to s3:PutObject
+    # only, and HeadObject without GetObject returns 403 (not 404). PUT is
+    # idempotent for the same body, so re-running just overwrites with the
+    # same bytes.
     for path in sorted(UPLOADS_DIR.iterdir()):
         if not path.is_file():
             continue
         key = f"{UPLOAD_PREFIX}{path.name}"
-        if _exists(s3, bucket, key):
-            print(f"  skip (exists): {key}")
-            continue
         content_type, _ = mimetypes.guess_type(path.name)
         if DRY_RUN:
             print(f"  would upload: {path} -> s3://{bucket}/{key} ({content_type})")
