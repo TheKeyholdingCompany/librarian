@@ -69,14 +69,6 @@
     margin-bottom: 1rem;
     font-size: 0.9rem;
   }
-  .hint {
-    font-size: 0.8rem;
-    color: var(--muted);
-    text-align: center;
-    margin-top: 1.5rem;
-    line-height: 1.5;
-  }
-  .hint code { font-size: 0.85em; }
 </style>
 {% endblock %}
 
@@ -106,11 +98,5 @@
   <div class="signup">
     <a href="{{ url_for('auth.signup') }}">Don't have an account? Sign up</a>
   </div>
-
-  <p class="hint">
-    Mock users:
-    <code>borrower</code> / <code>borrower</code> ·
-    <code>admin</code> / <code>admin</code>
-  </p>
 </div>
 {% endblock %}
