@@ -1,8 +1,10 @@
-"""One-shot: copy app/static/uploads/* to S3 and prefix existing DB rows.
+"""Copy app/static/uploads/* to S3 and prefix existing DB rows.
 
-Runs once per environment as part of the disk -> S3 cutover. Idempotent —
-PutObject silently overwrites with the same content, and the DB phase
-only updates rows that don't yet carry the ``books/`` prefix.
+Invoked from entrypoint.sh on every container boot during the disk -> S3
+cutover. Idempotent and safe to re-run: PutObject overwrites with the
+same content (so post-cutover boots redo cheap in-region PUTs until
+this file is removed), and the DB phase only updates rows that don't
+yet carry the ``books/`` prefix.
 
 Usage::
 
