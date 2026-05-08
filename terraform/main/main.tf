@@ -85,10 +85,16 @@ module "ecs" {
   secret_arns = [
     module.secrets.rds_secret_arn,
     module.secrets.flask_secret_arn,
+    module.secrets.oidc_secret_arn,
   ]
   rds_secret_arn      = module.secrets.rds_secret_arn
   flask_secret_arn    = module.secrets.flask_secret_arn
+  oidc_secret_arn     = module.secrets.oidc_secret_arn
   secrets_kms_key_arn = module.secrets.secrets_kms_key_arn
+
+  oidc_issuer_url = var.oidc_issuer_url
+  oidc_client_id  = var.oidc_client_id
+  oidc_admin_role = var.oidc_admin_role
 
   db_address  = module.rds.address
   db_port     = module.rds.port

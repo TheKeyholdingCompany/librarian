@@ -18,3 +18,12 @@ class Config:
     S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL")  # unset in prod
     S3_PUBLIC_BASE_URL = os.environ.get("S3_PUBLIC_BASE_URL")
     S3_PRESIGN_TTL_SECONDS = int(os.environ.get("S3_PRESIGN_TTL_SECONDS", "300"))
+
+    # Keycloak / OIDC. The issuer URL is the realm root — Authlib appends
+    # `/.well-known/openid-configuration` to discover endpoints and JWKS.
+    # OIDC_ADMIN_ROLE names the Keycloak realm role that grants admin in this
+    # app; anyone without it is treated as a borrower.
+    OIDC_ISSUER_URL = os.environ.get("OIDC_ISSUER_URL")
+    OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
+    OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
+    OIDC_ADMIN_ROLE = os.environ.get("OIDC_ADMIN_ROLE", "library-admin")

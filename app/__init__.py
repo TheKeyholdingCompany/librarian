@@ -1,7 +1,7 @@
 from flask import Flask
 
 from config import Config
-from app.extensions import db, migrate
+from app.extensions import db, migrate, oauth
 from app.storage import public_url
 
 
@@ -11,6 +11,17 @@ def create_app(config_class=Config):
 
     db.init_app(app)
     migrate.init_app(app, db)
+
+    # Authlib loads the realm's OIDC discovery doc on first use to pick up
+    # endpoints and JWKS — no need to hard-code per-realm URLs.
+    oauth.init_app(app)
+    oauth.register(
+        name="keycloak",
+        server_metadata_url=f"{app.config['OIDC_ISSUER_URL'].rstrip('/')}/.well-known/openid-configuration",
+        client_id=app.config["OIDC_CLIENT_ID"],
+        client_secret=app.config["OIDC_CLIENT_SECRET"],
+        client_kwargs={"scope": "openid email profile"},
+    )
 
     from app.auth import bp as auth_bp
     from app.library import bp as library_bp

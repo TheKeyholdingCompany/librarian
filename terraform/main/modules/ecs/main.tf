@@ -117,6 +117,9 @@ resource "aws_ecs_task_definition" "api" {
       { name = "AWS_REGION", value = var.region },
       { name = "S3_BUCKET", value = var.s3_uploads_bucket },
       { name = "S3_PUBLIC_BASE_URL", value = var.s3_uploads_public_base_url },
+      { name = "OIDC_ISSUER_URL", value = var.oidc_issuer_url },
+      { name = "OIDC_CLIENT_ID", value = var.oidc_client_id },
+      { name = "OIDC_ADMIN_ROLE", value = var.oidc_admin_role },
     ]
 
     # `valueFrom` accepts a Secrets Manager ARN with a JSON-pointer suffix:
@@ -125,6 +128,7 @@ resource "aws_ecs_task_definition" "api" {
     secrets = [
       { name = "DB_PASSWORD", valueFrom = "${var.rds_secret_arn}:password::" },
       { name = "SECRET_KEY", valueFrom = "${var.flask_secret_arn}:secret_key::" },
+      { name = "OIDC_CLIENT_SECRET", valueFrom = "${var.oidc_secret_arn}:client_secret::" },
     ]
 
     logConfiguration = {
