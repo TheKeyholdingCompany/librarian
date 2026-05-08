@@ -34,6 +34,27 @@ variable "flask_secret_arn" {
   description = "Secrets Manager ARN for the Flask SECRET_KEY"
 }
 
+variable "oidc_secret_arn" {
+  type        = string
+  description = "Secrets Manager ARN for the Keycloak OIDC client_secret"
+}
+
+variable "oidc_issuer_url" {
+  type        = string
+  description = "OIDC issuer URL (Keycloak realm root, e.g. https://login.keyholding.com/realms/<realm>)"
+}
+
+variable "oidc_client_id" {
+  type        = string
+  description = "OIDC client_id registered in Keycloak for this app"
+}
+
+variable "oidc_admin_role" {
+  type        = string
+  default     = "library-admin"
+  description = "Keycloak realm role name that grants admin in this app"
+}
+
 variable "secrets_kms_key_arn" {
   type        = string
   description = "KMS key ARN that encrypts the Secrets Manager secrets"

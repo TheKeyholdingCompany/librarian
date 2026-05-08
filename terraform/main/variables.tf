@@ -50,3 +50,26 @@ variable "price_class" {
   default     = "PriceClass_100"
   description = "CloudFront price class (PriceClass_100 = US/EU, PriceClass_200 = US/EU/Asia, PriceClass_All = all)"
 }
+
+# --- Keycloak / OIDC ---
+#
+# `oidc_issuer_url` is the realm root, e.g. https://login.keyholding.com/realms/keyholding.
+# `oidc_client_id` is the confidential client registered in Keycloak; the
+# matching client_secret lives in Secrets Manager (see modules/secrets/main.tf,
+# the `oidc` resource — populated out-of-band by the keycloak-config repo).
+
+variable "oidc_issuer_url" {
+  type        = string
+  description = "Keycloak realm root URL (issuer). Authlib appends /.well-known/openid-configuration."
+}
+
+variable "oidc_client_id" {
+  type        = string
+  description = "Keycloak OIDC client_id for this app"
+}
+
+variable "oidc_admin_role" {
+  type        = string
+  default     = "library-admin"
+  description = "Keycloak realm role name that grants admin in this app"
+}

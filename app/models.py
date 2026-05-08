@@ -13,9 +13,15 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
+    # Stable Keycloak `sub` claim — the only identifier guaranteed not to
+    # change on email/username edits in the IdP. Nullable to allow the
+    # existing seeded admin row to be linked by email on first OIDC login.
+    keycloak_sub = db.Column(db.String(64), unique=True, nullable=True, index=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
+    # Nullable since Keycloak owns credentials. Kept around so the column can
+    # be dropped in a follow-up migration once nothing references it.
+    password_hash = db.Column(db.String(200), nullable=True)
     role = db.Column(db.String(20), default="borrower", nullable=False)
     created_at = db.Column(
         db.DateTime(timezone=True),

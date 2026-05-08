@@ -55,6 +55,25 @@ services:
       echo 'MinIO bucket ready: '$$BUCKET
       "
 
+  # Local Keycloak for OIDC. Realm import file lives in the keycloak-config
+  # repo and gets dropped into ./keycloak-import/ before `docker compose up`
+  # (see README). Dev-mode start so HTTPS isn't required on localhost.
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak-import:/opt/keycloak/data/import:ro
+      - keycloak_data:/opt/keycloak/data
+
 volumes:
   postgres_data:
   minio_data:
+  keycloak_data:

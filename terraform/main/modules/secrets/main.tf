@@ -55,6 +55,28 @@ resource "aws_secretsmanager_secret_version" "flask" {
   })
 }
 
+# ── Keycloak / OIDC client secret ──────────────────────────
+# Terraform creates the secret resource so IAM and ECS can reference its
+# ARN; the actual `client_secret` value is rotated in out-of-band by
+# whoever owns the keycloak-config repo. ignore_changes prevents this code
+# from clobbering the rotated value on every apply.
+resource "aws_secretsmanager_secret" "oidc" {
+  name                    = "${var.name}-${var.env}/oidc"
+  recovery_window_in_days = 0
+  kms_key_id              = aws_kms_key.secrets.arn
+}
+
+resource "aws_secretsmanager_secret_version" "oidc" {
+  secret_id = aws_secretsmanager_secret.oidc.id
+  secret_string = jsonencode({
+    client_secret = "PLACEHOLDER-rotate-from-keycloak-config-repo"
+  })
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
 locals {
   db_username = "librarian"
 }
@@ -77,6 +99,10 @@ output "rds_password" {
 
 output "flask_secret_arn" {
   value = aws_secretsmanager_secret.flask.arn
+}
+
+output "oidc_secret_arn" {
+  value = aws_secretsmanager_secret.oidc.arn
 }
 
 output "secrets_kms_key_arn" {

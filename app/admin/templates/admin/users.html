@@ -78,7 +78,14 @@
   <div class="card">
     <h1>Manage Users</h1>
     <p><a href="{{ url_for('admin.dashboard') }}">← Back to dashboard</a></p>
-    
+
+    <p class="muted">
+      Identity is managed in Keycloak. Use the Keycloak admin console to
+      create users, reset passwords, or change roles. Deleting a row here
+      only removes the local mirror; the user can sign in again to recreate
+      it.
+    </p>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
@@ -86,7 +93,7 @@
         {% endfor %}
       {% endif %}
     {% endwith %}
-    
+
     {% if users %}
     <table>
       <thead>
@@ -105,23 +112,11 @@
           <td>{{ user.id }}</td>
           <td>{{ user.username }}</td>
           <td>{{ user.email }}</td>
-          <td>
-            <form method="POST" action="{{ url_for('admin.change_role', user_id=user.id) }}" style="display: flex; gap: 0.5rem;">
-              <select name="role" style="padding: 0.3rem; border-radius: 4px; border: 1px solid var(--border);">
-                <option value="borrower" {% if user.role == 'borrower' %}selected{% endif %}>Borrower</option>
-                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
-              </select>
-              <button type="submit" class="btn btn-info" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Save</button>
-            </form>
-          </td>
+          <td>{{ user.role }}</td>
           <td class="muted">{{ user.created_at.strftime('%Y-%m-%d') }}</td>
           <td class="actions">
-            <form method="POST" action="{{ url_for('admin.reset_password', user_id=user.id) }}" style="display: flex; gap: 0.5rem;">
-              <input type="password" name="new_password" placeholder="New password" required minlength="6">
-              <button type="submit" class="btn btn-warning">Reset</button>
-            </form>
-            <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" onsubmit="return confirm('Are you sure you want to delete this user?');">
-              <button type="submit" class="btn btn-danger">Delete</button>
+            <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" onsubmit="return confirm('Delete the local mirror row for this user? They can sign in again to recreate it. To prevent sign-in entirely, disable the user in Keycloak.');">
+              <button type="submit" class="btn btn-danger">Delete local row</button>
             </form>
           </td>
         </tr>

@@ -2,7 +2,6 @@ from flask import render_template, redirect, url_for, session, flash, request, j
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
-from werkzeug.security import generate_password_hash
 
 from app.auth.decorators import login_required, admin_required
 from app.extensions import db
@@ -10,23 +9,6 @@ from app.forms import BookForm
 from app.library import bp
 from app.models import Book, Borrow, User, Rating
 from app.storage import presign_put, UnsupportedImageType, ALLOWED_IMAGE_TYPES
-
-
-def _get_or_create_user(username):
-    if not username:
-        return None
-
-    user = db.session.scalar(db.select(User).where(User.username == username))
-    if not user:
-        user = User(
-            username=username,
-            email=f"{username}@library.local",
-            password_hash=generate_password_hash(username),
-            role=session.get("role", "borrower"),
-        )
-        db.session.add(user)
-        db.session.commit()
-    return user
 
 
 @bp.route("/")
@@ -108,15 +90,10 @@ def favorite_book(book_id):
         flash("Book not found.", "error")
         return redirect(url_for("library.index"))
 
-    username = session.get("username")
-    if not username:
+    user = db.session.get(User, session.get("user_id"))
+    if not user:
         flash("You must be logged in to favourite a book.", "error")
         return redirect(url_for("auth.login"))
-
-    user = _get_or_create_user(username)
-    if not user:
-        flash("Unable to find or create user.", "error")
-        return redirect(url_for("library.index"))
 
     if book in user.favorites:
         user.favorites.remove(book)
@@ -310,25 +287,11 @@ def borrow_book(book_id):
         flash("Book not found.", "error")
         return redirect(url_for("library.index"))
     
-    # Get or create user from session username
-    username = session.get("username")
-    if not username:
+    user = db.session.get(User, session.get("user_id"))
+    if not user:
         flash("You must be logged in to borrow a book.", "error")
         return redirect(url_for("auth.login"))
-    
-    # Try to find user, create if doesn't exist
-    user = db.session.scalars(db.select(User).where(User.username == username)).first()
-    if not user:
-        # Create new user with default email based on username
-        user = User(
-            username=username,
-            email=f"{username}@library.local",
-            password_hash=generate_password_hash(username),
-            role="borrower",
-        )
-        db.session.add(user)
-        db.session.commit()
-    
+
     # Check if book is already borrowed
     active_borrow = db.session.scalars(
         db.select(Borrow).where(

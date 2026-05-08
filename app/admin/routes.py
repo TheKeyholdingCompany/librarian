@@ -1,5 +1,4 @@
-from flask import abort, flash, redirect, render_template, request, session, url_for
-from werkzeug.security import generate_password_hash
+from flask import flash, redirect, render_template, session, url_for
 from sqlalchemy.orm import selectinload
 
 from app.admin import bp
@@ -40,50 +39,14 @@ def users():
 @admin_required
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
-    
-    # Prevent admin from deleting themselves
+
+    # Self-protect: an admin shouldn't be able to wipe their own row out from
+    # under their session. Disabling in Keycloak is the right escape hatch.
     if user.id == session.get("user_id"):
         flash("You cannot delete your own account.", "error")
         return redirect(url_for("admin.users"))
-    
+
     db.session.delete(user)
     db.session.commit()
-    flash(f"User '{user.username}' has been deleted.", "success")
-    return redirect(url_for("admin.users"))
-
-
-@bp.route("/admin/users/<int:user_id>/reset-password", methods=["POST"])
-@admin_required
-def reset_password(user_id):
-    user = User.query.get_or_404(user_id)
-    new_password = request.form.get("new_password", "")
-    
-    if not new_password or len(new_password) < 6:
-        flash("Password must be at least 6 characters.", "error")
-        return redirect(url_for("admin.users"))
-    
-    user.password_hash = generate_password_hash(new_password)
-    db.session.commit()
-    flash(f"Password for '{user.username}' has been reset.", "success")
-    return redirect(url_for("admin.users"))
-
-
-@bp.route("/admin/users/<int:user_id>/change-role", methods=["POST"])
-@admin_required
-def change_role(user_id):
-    user = User.query.get_or_404(user_id)
-    new_role = request.form.get("role", "borrower")
-    
-    if new_role not in ["borrower", "admin"]:
-        flash("Invalid role.", "error")
-        return redirect(url_for("admin.users"))
-    
-    # Prevent admin from changing their own role
-    if user.id == session.get("user_id"):
-        flash("You cannot change your own role.", "error")
-        return redirect(url_for("admin.users"))
-    
-    user.role = new_role
-    db.session.commit()
-    flash(f"Role for '{user.username}' changed to '{new_role}'.", "success")
+    flash(f"Local mirror row for '{user.username}' deleted. Disable in Keycloak to block sign-in.", "success")
     return redirect(url_for("admin.users"))
