@@ -1,4 +1,5 @@
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 from app.extensions import db, migrate, oauth
@@ -8,6 +9,13 @@ from app.storage import public_url
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # CloudFront → ALB (HTTP) → ECS. CloudFront stamps `X-Forwarded-Proto:
+    # https`; ALB appends its own `http`. x_proto=2 picks the CloudFront
+    # value so `url_for(..., _external=True)` produces https URLs (e.g.
+    # the OIDC redirect_uri Keycloak validates). x_for=2 mirrors the same
+    # for client IPs in access logs.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=2, x_host=1)
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -28,7 +36,9 @@ def create_app(config_class=Config):
     from app.admin import bp as admin_bp
     from app.about import bp as about_bp
     from app.borrower import bp as borrower_bp
-    app.register_blueprint(auth_bp)
+    # url_prefix="/auth" puts login/callback/logout under /auth/* — must
+    # match the Valid Redirect URIs registered on the Keycloak client.
+    app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(library_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(about_bp)
