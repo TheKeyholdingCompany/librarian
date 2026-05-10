@@ -1,3 +1,5 @@
+import logging
+
 from flask import Flask
 
 from config import Config
@@ -29,6 +31,12 @@ class _CloudFrontHTTPSFix:
 
 
 def create_app(config_class=Config):
+    # Without this, module-level `logging.getLogger(__name__)` loggers have
+    # no handlers and INFO records are silently dropped (lastResort only
+    # surfaces WARNING+). Gunicorn's --error-logfile routes its own logger,
+    # not arbitrary app loggers, so we have to wire stderr ourselves.
+    logging.basicConfig(level=logging.INFO)
+
     app = Flask(__name__)
     app.config.from_object(config_class)
 
