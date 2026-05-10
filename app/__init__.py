@@ -12,7 +12,7 @@ class _CloudFrontHTTPSFix:
     `X-Forwarded-Proto` with its listener's value (http) rather than
     appending — so the standard ProxyFix pattern doesn't help here.
     CloudFront is configured to inject `X-Forwarded-Scheme: https` as an
-    immutable origin custom header (see modules/cloudfront/main.tf); ALB
+    immutable origin custom header (see terraform/main/modules/cloudfront/main.tf); ALB
     passes that name through verbatim because it has no special handling
     for it. Presence = the request entered through prod's CloudFront,
     so url_for(_external=True) should generate https URLs (e.g. the OIDC
