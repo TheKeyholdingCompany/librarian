@@ -45,7 +45,14 @@ def create_app(config_class=Config):
         server_metadata_url=f"{app.config['OIDC_ISSUER_URL'].rstrip('/')}/.well-known/openid-configuration",
         client_id=app.config["OIDC_CLIENT_ID"],
         client_secret=app.config["OIDC_CLIENT_SECRET"],
-        client_kwargs={"scope": "openid email profile"},
+        # PKCE is required by the Keycloak client config (S256). Authlib
+        # doesn't auto-enable it from server metadata; opting in here makes
+        # the SDK generate the code_verifier and send code_challenge /
+        # code_challenge_method on the authorize redirect.
+        client_kwargs={
+            "scope": "openid email profile",
+            "code_challenge_method": "S256",
+        },
     )
 
     from app.auth import bp as auth_bp

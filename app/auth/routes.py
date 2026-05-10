@@ -1,6 +1,7 @@
 import logging
 from urllib.parse import urlencode
 
+from authlib.integrations.base_client.errors import OAuthError
 from flask import current_app, redirect, request, session, url_for
 
 from app.auth import bp
@@ -20,7 +21,20 @@ def login():
 
 @bp.route("/callback")
 def callback():
-    token = oauth.keycloak.authorize_access_token()
+    # Keycloak surfaces auth-time errors by redirecting back here with
+    # ?error=...&error_description=... (no `code`), which makes Authlib's
+    # token exchange raise OAuthError. Logging the upstream description
+    # makes the cause obvious in CloudWatch instead of a generic 500.
+    try:
+        token = oauth.keycloak.authorize_access_token()
+    except OAuthError as exc:
+        logger.warning(
+            "OIDC callback rejected by Keycloak: %s — %s",
+            exc.error,
+            exc.description,
+        )
+        return redirect(url_for("auth.login"))
+
     claims = token.get("userinfo") or {}
 
     sub = claims.get("sub")
