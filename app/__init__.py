@@ -1,21 +1,38 @@
 from flask import Flask
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 from app.extensions import db, migrate, oauth
 from app.storage import public_url
 
 
+class _CloudFrontHTTPSFix:
+    """Flip wsgi.url_scheme to https when the request came in via CloudFront.
+
+    The stack is CloudFront(HTTPS) → ALB(HTTP) → ECS, and ALB *replaces*
+    `X-Forwarded-Proto` with its listener's value (http) rather than
+    appending — so the standard ProxyFix pattern doesn't help here.
+    CloudFront is configured to inject `X-Forwarded-Scheme: https` as an
+    immutable origin custom header (see modules/cloudfront/main.tf); ALB
+    passes that name through verbatim because it has no special handling
+    for it. Presence = the request entered through prod's CloudFront,
+    so url_for(_external=True) should generate https URLs (e.g. the OIDC
+    redirect_uri that Keycloak validates).
+    """
+
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        if environ.get("HTTP_X_FORWARDED_SCHEME") == "https":
+            environ["wsgi.url_scheme"] = "https"
+        return self.wsgi_app(environ, start_response)
+
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # CloudFront → ALB (HTTP) → ECS. CloudFront stamps `X-Forwarded-Proto:
-    # https`; ALB appends its own `http`. x_proto=2 picks the CloudFront
-    # value so `url_for(..., _external=True)` produces https URLs (e.g.
-    # the OIDC redirect_uri Keycloak validates). x_for=2 mirrors the same
-    # for client IPs in access logs.
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=2, x_host=1)
+    app.wsgi_app = _CloudFrontHTTPSFix(app.wsgi_app)
 
     db.init_app(app)
     migrate.init_app(app, db)
