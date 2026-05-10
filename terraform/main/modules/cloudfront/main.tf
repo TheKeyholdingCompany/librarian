@@ -76,6 +76,19 @@ resource "aws_cloudfront_distribution" "this" {
       origin_protocol_policy = "http-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
+
+    # `viewer_protocol_policy = "redirect-to-https"` below means every
+    # request reaching origin came from an HTTPS viewer, so this static
+    # value is always correct. The ALB's HTTP listener replaces
+    # `X-Forwarded-Proto` with `http` before forwarding to ECS, which
+    # breaks Flask's url_for(_external=True) for OIDC redirect_uris. A
+    # custom header name (vs reusing `X-Forwarded-Proto`) sidesteps the
+    # ALB rewrite entirely; the app reads this header to flip
+    # wsgi.url_scheme back to https.
+    custom_header {
+      name  = "X-Forwarded-Scheme"
+      value = "https"
+    }
   }
 
   # Default behavior: forward everything to the ALB with no caching. Auth
