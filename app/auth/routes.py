@@ -36,6 +36,7 @@ def callback():
         return redirect(url_for("auth.login"))
 
     claims = token.get("userinfo") or {}
+    logger.info("OIDC claims: %s", claims)
 
     sub = claims.get("sub")
     if not sub:
