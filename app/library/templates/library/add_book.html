@@ -112,25 +112,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
-  <header>
-    {% include "_brand.html" %}
-    <div class="session">
-      {% if session.get('username') %}
-        Logged in as <strong>{{ session['username'] }}</strong> ({{ session['role'] }})
-        {% if session['role'] == 'admin' %}
-          · <a href="{{ url_for('admin.dashboard') }}">Admin</a>
-        {% endif %}
-        ·
-        <form method="POST" action="{{ url_for('auth.logout') }}" style="display:inline">
-          <button type="submit">Log out</button>
-        </form>
-      {% else %}
-        <a href="{{ url_for('auth.login') }}">Log in</a>
-      {% endif %}
-    </div>
-  </header>
-
+<div class="container page">
   <a href="{{ url_for('library.index') }}" class="back-link">← Back to Library</a>
 
   <div class="card">

@@ -4,427 +4,315 @@
 
 {% block extra_styles %}
 <style>
-  header {
+  .toolbar {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
-    margin-bottom: 1.5rem;
     gap: 1rem;
     flex-wrap: wrap;
+    margin-bottom: 1.75rem;
   }
-  .session {
-    font-size: 0.9rem;
+  .toolbar h1 { margin: 0 0 0.25rem; font-size: 1.6rem; letter-spacing: -0.02em; }
+  .toolbar .subtitle { color: var(--muted); font-size: 0.95rem; }
+  .toolbar-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  .search-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.75rem;
+    max-width: 560px;
+  }
+  .search-field {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .search-field svg {
+    position: absolute;
+    left: 0.9rem;
+    width: 18px;
+    height: 18px;
     color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
+    pointer-events: none;
   }
-  .session strong { color: var(--text); }
-  .session button {
-    color: var(--brand);
-    background: none;
-    border: none;
-    font-size: 0.9rem;
-    cursor: pointer;
-    padding: 0;
-    font-family: inherit;
-  }
-  .session button:hover { text-decoration: underline; }
-  h1 { margin-top: 0; margin-bottom: 0.25rem; }
-  ul { padding-left: 1.25rem; }
-  li { margin-bottom: 0.25rem; }
-  .actions {
-    margin-bottom: 1.5rem;
-  }
-  .actions a {
-    display: inline-block;
-    padding: 0.75rem 1.5rem;
-    background: var(--brand);
-    color: white;
-    border-radius: 6px;
-    text-decoration: none;
-    font-weight: 500;
-    transition: background-color 0.2s;
-  }
-  .actions a:hover {
-    background: var(--brand-dark);
-    text-decoration: none;
-  }
-  .search-form {
-    display: flex;
-    gap: 0.5rem;
-    margin: 1rem 0;
-    max-width: 520px;
-  }
-  .search-form input {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 1rem;
-    color: var(--text);
-    background: white;
-  }
-  .search-form button {
-    padding: 0.75rem 1.2rem;
-    border: none;
-    border-radius: 8px;
-    background: var(--brand);
-    color: white;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  .search-form button:hover {
-    background: var(--brand-dark);
-  }
-  .search-form {
-    display: flex;
-    gap: 0.5rem;
-    margin: 1rem 0 0.75rem;
+  .search-field input {
     width: 100%;
-  }
-  .search-form input {
-    flex: 1;
-    padding: 0.75rem 1rem;
+    padding: 0.7rem 1rem 0.7rem 2.5rem;
     border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 1rem;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 0.95rem;
     color: var(--text);
-    background: white;
+    background: #fff;
+    transition: border-color 0.18s, box-shadow 0.18s;
   }
-  .search-form button {
-    padding: 0.75rem 1.2rem;
-    border: none;
-    border-radius: 8px;
-    background: var(--brand);
-    color: white;
-    cursor: pointer;
-    font-weight: 600;
+  .search-field input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-soft);
   }
-  .search-form button:hover {
-    background: var(--brand-dark);
-  }
-  .search-form .clear-button {
-    padding: 0.75rem 1.2rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: white;
-    color: var(--text);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
-  }
-  .search-form .clear-button:hover {
-    background: #f0f1f4;
-  }
+
   .book-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
-    margin-top: 1rem;
   }
   .book-card {
-    background: #f8f9fa;
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius);
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   .book-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
   }
-  .book-photo {
-    width: 100%;
-    height: 200px;
-    background: #f8f9fa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .book-cover {
+    position: relative;
+    height: 240px;
+    background: #eef0f3;
     overflow: hidden;
-    border-bottom: 1px solid var(--border);
   }
-  .book-photo img {
+  .book-cover img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  .book-details {
-    padding: 1rem;
-  }
-  .book-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 0.5rem;
-    line-height: 1.3;
-  }
-  .book-meta {
-    font-size: 0.85rem;
-    color: var(--muted);
-    margin-bottom: 0.75rem;
-  }
-  .book-status-info {
-    font-size: 0.875rem;
-    margin-bottom: 0.75rem;
-  }
-  .book-status-info.borrowed {
-    color: #d96d0e;
-    font-weight: 600;
-  }
-  .book-status-info.available {
-    color: #1f8a70;
-    font-weight: 600;
-  }
-  .book-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-  .book-btn {
-    flex: 1;
-    min-width: 80px;
-    padding: 0.6rem 0.75rem;
+  .fav-toggle {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
     border: none;
-    border-radius: 5px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 2px 6px rgba(16, 24, 40, 0.18);
+    color: var(--muted);
     cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: background-color 0.2s;
+    transition: transform 0.15s, color 0.15s, background-color 0.15s;
   }
-  .borrow-btn {
-    background: var(--brand);
-    color: white;
-  }
-  .borrow-btn:hover {
-    background: var(--brand-dark);
-  }
-  .borrow-btn:disabled {
-    background: var(--muted);
-    cursor: not-allowed;
-  }
-  .return-btn {
-    background: #4CAF50;
-    color: white;
-  }
-  .return-btn:hover {
-    background: #45a049;
-  }
-  .delete-btn {
-    background: #c41e3a;
-    color: white;
-  }
-  .delete-btn:hover {
-    background: #a01729;
-  }
-  .edit-btn {
-    background: #1976d2;
-    color: white;
-  }
-  .edit-btn:hover {
-    background: #125ea8;
-  }
-  .favorite-btn {
-    flex: 1;
-    min-width: 80px;
-    padding: 0.6rem 0.75rem;
-    background: transparent;
-    color: var(--brand);
-    border: 1px solid var(--brand);
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: background-color 0.2s, color 0.2s;
-  }
-  .favorite-btn:hover {
-    background: rgba(0, 0, 0, 0.04);
-  }
-  .favorite-btn.active {
-    background: var(--brand);
-    color: white;
-  }
-  .rate-btn {
+  .fav-toggle:hover { transform: scale(1.08); background: #fff; }
+  .fav-toggle svg { width: 18px; height: 18px; }
+  .fav-toggle.active { color: var(--brand); }
+  .fav-toggle.active svg { fill: var(--brand); }
+
+  .book-body { padding: 1.1rem 1.25rem 1.25rem; display: flex; flex-direction: column; flex: 1; }
+  .book-title { font-size: 1.15rem; font-weight: 700; line-height: 1.3; margin-bottom: 0.2rem; letter-spacing: -0.01em; }
+  .book-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 0.7rem; }
+
+  .rating-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem; }
+  .stars { display: inline-flex; gap: 1px; font-size: 1rem; line-height: 1; }
+  .stars .star { color: #d8dde3; }
+  .stars .star.filled { color: var(--brand); }
+  .rating-count { font-size: 0.82rem; color: var(--muted); }
+  .rate-link {
     background: none;
     border: none;
-    color: var(--brand);
-    cursor: pointer;
-    font-size: 0.85rem;
     padding: 0;
-    text-decoration: underline;
+    margin-left: auto;
+    color: var(--brand);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
   }
-  @media (max-width: 1024px) {
-    .book-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+  .rate-link:hover { text-decoration: underline; }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    align-self: flex-start;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
   }
-  @media (max-width: 640px) {
-    .book-grid {
-      grid-template-columns: 1fr;
-    }
+  .status-pill svg { width: 15px; height: 15px; }
+  .status-pill.available { background: var(--ok-bg); color: var(--ok-text); }
+  .status-pill.borrowed { background: var(--warn-bg); color: var(--warn-text); }
+  .due-note { font-size: 0.78rem; color: var(--muted); margin: -0.55rem 0 1rem; }
+
+  .book-desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.45;
+    margin: 0 0 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
+
+  .book-actions { display: flex; gap: 0.5rem; margin-top: auto; }
+  .book-actions form { flex: 1; display: flex; }
+  .book-actions .btn { flex: 1; }
+  .admin-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  .admin-actions form, .admin-actions a { flex: 1; display: flex; }
+  .admin-actions .btn { flex: 1; }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: var(--muted);
+  }
+
+  @media (max-width: 1024px) { .book-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .book-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-  <header>
-    {% include "_brand.html" %}
-    <div class="session">
+<div class="container page">
+  <div class="toolbar">
+    <div>
+      <h1>Browse the Library</h1>
+      <div class="subtitle">Borrow a book, leave a review, and build your wishlist.</div>
+    </div>
+    <div class="toolbar-actions">
+      {% if session.get('role') == 'admin' %}
+        <a href="{{ url_for('library.add_book') }}" class="btn btn-primary">+ Add Book</a>
+      {% endif %}
       {% if session.get('username') %}
-        Logged in as <strong>{{ session['username'] }}</strong> ({{ session['role'] }})
-        · <a href="{{ url_for('library.dashboard') }}">My Dashboard</a>
-        {% if session['role'] == 'admin' %}
-          · <a href="{{ url_for('admin.dashboard') }}">Admin</a>
-        {% endif %}
-        ·
-        <form method="POST" action="{{ url_for('auth.logout') }}" style="display:inline">
-          <button type="submit">Log out</button>
-        </form>
-      {% else %}
-        <a href="{{ url_for('auth.login') }}">Log in</a>
+        <a href="{{ url_for('library.request_book') }}" class="btn btn-outline">+ Request a Book</a>
       {% endif %}
     </div>
-  </header>
+  </div>
 
-  <div class="card">
-    <h1>Librarian</h1>
-
-    <form method="GET" action="{{ url_for('library.index') }}" class="search-form" role="search">
+  <form method="GET" action="{{ url_for('library.index') }}" class="search-form" role="search">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input
         type="search"
         name="q"
         value="{{ search_query|default('') }}"
         placeholder="Search by title or description"
         aria-label="Search books">
-      <button type="submit">Search</button>
-      <a href="{{ url_for('library.index') }}" class="clear-button">Clear</a>
-    </form>
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if search_query %}
+      <a href="{{ url_for('library.index') }}" class="btn btn-ghost">Clear</a>
+    {% endif %}
+  </form>
 
-    <h2>Books</h2>
-    {% if session.get('role') == 'admin' %}
-    <div class="actions">
-      <a href="{{ url_for('library.add_book') }}">+ Add Book</a>
-    </div>
-    {% endif %}
-    {% if session.get('username') %}
-    <div class="actions">
-      <a href="{{ url_for('library.request_book') }}">+ Request a Book</a>
-    </div>
-    {% endif %}
-    {% if books %}
-      <div class="book-grid">
-        {% for book in books %}
-          <div class="book-card">
-            <div class="book-photo">
-              {% if book.photo_filename %}
-                <img src="{{ book_image_url(book.photo_filename) }}" alt="{{ book.name }}">
-              {% else %}
-                <img src="{{ url_for('static', filename='images/default-book-cover.svg') }}" alt="Default book cover">
-              {% endif %}
-            </div>
-            <div class="book-details">
-              <div class="book-title">{{ book.name }}</div>
-              <div class="book-meta">Added {{ book.created_at.strftime('%Y-%m-%d') }}</div>
-              
-              <!-- Rating Display -->
-              <div class="book-rating" style="margin: 0.5rem 0;">
-                {% if book_ratings[book.id] %}
-                  <div class="stars-display">
-                    {% for i in range(1, 6) %}
-                      {% if i <= book_ratings[book.id] %}
-                        ★
-                      {% else %}
-                        ☆
-                      {% endif %}
-                    {% endfor %}
-                    <span style="margin-left: 0.5rem; font-size: 0.85rem; color: var(--muted);">
-                      {{ book_ratings[book.id] }}/5 ({{ book.ratings|length }} review{{ 's' if book.ratings|length != 1 else '' }})
-                    </span>
-                  </div>
-                {% else %}
-                  <div class="stars-display" style="color: #ddd;">
-                    ☆☆☆☆☆
-                    <span style="margin-left: 0.5rem; font-size: 0.85rem; color: var(--muted);">
-                      No ratings yet
-                    </span>
-                  </div>
-                {% endif %}
-                <button
-                  class="rate-btn"
-                  type="button"
-                  onclick="openRatingModal(this)"
-                  data-book-id="{{ book.id }}"
-                  data-book-name="{{ book.name | e }}"
-                  data-user-rating='{{ (user_rating_data.get(book.id) if user_rating_data.get(book.id) else None) | tojson | e }}'
-                >
-                  {% if user_rating_data.get(book.id) %}Edit rating{% else %}Rate this book{% endif %}
+  {% if books %}
+    <div class="book-grid">
+      {% for book in books %}
+        {% set is_borrowed = book_status[book.id] %}
+        {% set avg = book_ratings[book.id] %}
+        <article class="book-card">
+          <div class="book-cover">
+            {% if book.photo_filename %}
+              <img src="{{ book_image_url(book.photo_filename) }}" alt="{{ book.name }}">
+            {% else %}
+              <img src="{{ url_for('static', filename='images/default-book-cover.svg') }}" alt="Default book cover">
+            {% endif %}
+            {% if session.get('username') %}
+              {% set is_fav = book.id in favorite_book_ids|default([]) %}
+              <form method="POST" action="{{ url_for('library.favorite_book', book_id=book.id) }}" style="margin:0">
+                <button type="submit"
+                        class="fav-toggle {% if is_fav %}active{% endif %}"
+                        title="{% if is_fav %}Remove from wishlist{% else %}Add to wishlist{% endif %}"
+                        aria-label="{% if is_fav %}Remove from wishlist{% else %}Add to wishlist{% endif %}">
+                  <svg viewBox="0 0 24 24" fill="{% if is_fav %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                 </button>
-              </div>
-              
-              {% if book_status[book.id] %}
-                <div class="book-status-info borrowed">
-                  Borrowed by {{ book_status[book.id].user.username }}
-                </div>
-                <div class="book-meta" style="color: #d96d0e;">
-                  Due: {{ book_status[book.id].due_date.strftime('%b %d, %Y') }}
-                </div>
-              {% else %}
-                <div class="book-status-info available">Available</div>
-              {% endif %}
-              
-              {% if book.description %}
-                <div class="book-meta" style="margin: 0.5rem 0; line-height: 1.4; font-style: italic; color: var(--text); max-height: 60px; overflow: hidden;">
-                  {{ book.description[:100] }}{% if book.description|length > 100 %}...{% endif %}
-                </div>
-              {% endif %}
-              
-              <div class="book-actions">
-                {% if book_status[book.id] and (book_status[book.id].user.username == session.get('username') or session.get('role') == 'admin') %}
-                  <form method="POST" action="{{ url_for('library.return_book', book_id=book.id) }}" style="flex: 1; display: flex;">
-                    <button type="submit" class="book-btn return-btn">Return</button>
-                  </form>
-                {% endif %}
-                <form method="POST" action="{{ url_for('library.borrow_book', book_id=book.id) }}" style="flex: 1; display: flex;">
-                  <button type="submit" class="book-btn borrow-btn" {% if book_status[book.id] %}disabled{% endif %}>
-                    {% if book_status[book.id] %}Borrowed{% else %}Borrow{% endif %}
-                  </button>
-                </form>
-                <form method="POST" action="{{ url_for('library.favorite_book', book_id=book.id) }}" style="flex: 1; display: flex;">
-                  <button type="submit" class="book-btn favorite-btn {% if book.id in favorite_book_ids|default([]) %}active{% endif %}">
-                    {% if book.id in favorite_book_ids|default([]) %}♥ Favourite{% else %}♡ Favourite{% endif %}
-                  </button>
-                </form>
-                {% if session.get('role') == 'admin' %}
-                  <a href="{{ url_for('library.edit_book', book_id=book.id) }}" class="book-btn edit-btn" style="flex: 1; display: flex; justify-content: center; align-items: center;">Edit</a>
-                  <form method="POST" action="{{ url_for('library.delete_book', book_id=book.id) }}" style="flex: 1; display: flex;" onsubmit="return confirm('Are you sure you want to delete this book?');">
-                    <button type="submit" class="book-btn delete-btn">Delete</button>
-                  </form>
-                {% endif %}
-              </div>
-            </div>
+              </form>
+            {% endif %}
           </div>
-        {% endfor %}
-      </div>
-    {% else %}
+
+          <div class="book-body">
+            <h2 class="book-title">{{ book.name }}</h2>
+            <div class="book-sub">Added {{ book.created_at.strftime('%b %d, %Y') }}</div>
+
+            <div class="rating-row">
+              <span class="stars" aria-label="{% if avg %}Rated {{ avg }} out of 5{% else %}Not yet rated{% endif %}">
+                {% for i in range(1, 6) %}
+                  <span class="star {% if avg and i <= avg|round(0, 'common')|int %}filled{% endif %}">★</span>
+                {% endfor %}
+              </span>
+              <span class="rating-count">
+                {% if avg %}({{ book.ratings|length }} review{{ 's' if book.ratings|length != 1 else '' }}){% else %}No reviews{% endif %}
+              </span>
+              <button
+                class="rate-link"
+                type="button"
+                onclick="openRatingModal(this)"
+                data-book-id="{{ book.id }}"
+                data-book-name="{{ book.name | e }}"
+                data-user-rating='{{ (user_rating_data.get(book.id) if user_rating_data.get(book.id) else None) | tojson | e }}'
+              >{% if user_rating_data.get(book.id) %}Edit rating{% else %}Rate{% endif %}</button>
+            </div>
+
+            {% if is_borrowed %}
+              <span class="status-pill borrowed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Borrowed
+              </span>
+              <div class="due-note">
+                By {{ is_borrowed.user.username }} · due {{ is_borrowed.due_date.strftime('%b %d, %Y') }}
+              </div>
+            {% else %}
+              <span class="status-pill available">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Available
+              </span>
+            {% endif %}
+
+            {% if book.description %}
+              <p class="book-desc">{{ book.description[:140] }}{% if book.description|length > 140 %}…{% endif %}</p>
+            {% endif %}
+
+            <div class="book-actions">
+              {% if is_borrowed and (is_borrowed.user.username == session.get('username') or session.get('role') == 'admin') %}
+                <form method="POST" action="{{ url_for('library.return_book', book_id=book.id) }}">
+                  <button type="submit" class="btn btn-outline">Return</button>
+                </form>
+              {% endif %}
+              <form method="POST" action="{{ url_for('library.borrow_book', book_id=book.id) }}">
+                <button type="submit" class="btn btn-primary" {% if is_borrowed %}disabled{% endif %}>
+                  {% if is_borrowed %}Borrowed{% else %}Borrow{% endif %}
+                </button>
+              </form>
+            </div>
+
+            {% if session.get('role') == 'admin' %}
+              <div class="admin-actions">
+                <a href="{{ url_for('library.edit_book', book_id=book.id) }}" class="btn btn-ghost">Edit</a>
+                <form method="POST" action="{{ url_for('library.delete_book', book_id=book.id) }}" onsubmit="return confirm('Are you sure you want to delete this book?');">
+                  <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
       {% if search_query %}
-        <p class="muted">No books found for "{{ search_query }}".</p>
+        <p>No books found for “{{ search_query }}”.</p>
       {% else %}
-        <p class="muted">No books yet.</p>
+        <p>No books yet.</p>
       {% endif %}
-    {% endif %}
-  </div>
+    </div>
+  {% endif %}
 
   <!-- Rating Modal -->
   <div id="rating-modal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
-    <div class="modal-content" style="background-color: white; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 10px;">
+    <div class="modal-content" style="background-color: white; margin: 12% auto; padding: 1.75rem; border: 1px solid var(--border); width: 90%; max-width: 500px; border-radius: var(--radius); box-shadow: var(--shadow-md);">
       <span class="close" onclick="closeRatingModal()" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
-      <h3 id="modal-title">Rate Book</h3>
+      <h3 id="modal-title" style="margin-top:0;">Rate Book</h3>
       <form id="rating-form" method="POST">
-        <div style="margin: 20px 0;">
+        <div style="margin: 1.25rem 0;">
           <label style="display: block; margin-bottom: 10px; font-weight: 600;">Rating:</label>
           <div class="star-rating" style="font-size: 2rem; margin-bottom: 15px;">
             <input type="radio" id="star1" name="rating" value="1" style="display: none;">
@@ -439,13 +327,13 @@
             <label for="star5" style="cursor: pointer; color: #ddd;">★</label>
           </div>
         </div>
-        <div style="margin: 20px 0;">
+        <div style="margin: 1.25rem 0;">
           <label for="review" style="display: block; margin-bottom: 10px; font-weight: 600;">Review (optional):</label>
-          <textarea id="review" name="review" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; resize: vertical;" placeholder="Share your thoughts about this book..."></textarea>
+          <textarea id="review" name="review" rows="4" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 10px; font-family: inherit; resize: vertical;" placeholder="Share your thoughts about this book..."></textarea>
         </div>
-        <div style="text-align: right;">
-          <button type="button" onclick="closeRatingModal()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Cancel</button>
-          <button type="submit" style="background: var(--brand); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Submit Rating</button>
+        <div style="text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
+          <button type="button" onclick="closeRatingModal()" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Rating</button>
         </div>
       </form>
     </div>
@@ -471,13 +359,13 @@ function openRatingModal(button) {
   document.getElementById('modal-title').textContent = `Rate "${bookName}"`;
   document.getElementById('rating-form').action = `/rate/${bookId}`;
   document.getElementById('rating-modal').style.display = 'block';
-  
+
   // Reset form
   document.getElementById('rating-form').reset();
   document.querySelectorAll('.star-rating label').forEach(label => {
     label.style.color = '#ddd';
   });
-  
+
   // Load existing rating if any
   if (userRating) {
     const starInput = document.getElementById(`star${userRating.rating}`);
@@ -494,13 +382,6 @@ function closeRatingModal() {
   currentBookId = null;
 }
 
-// Rate button interaction
-function bindRatingButtons() {
-  document.querySelectorAll('.rate-btn').forEach(button => {
-    button.addEventListener('click', () => openRatingModal(button));
-  });
-}
-
 function bindStarLabels() {
   document.querySelectorAll('.star-rating label').forEach((label, index) => {
     label.addEventListener('click', () => {
@@ -511,7 +392,6 @@ function bindStarLabels() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  bindRatingButtons();
   bindStarLabels();
 });
 
