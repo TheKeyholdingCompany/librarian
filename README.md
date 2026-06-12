@@ -45,36 +45,61 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-The defaults work out-of-the-box with the bundled Docker Compose setup. Edit `.env` only if you change ports, credentials, or want a different `SECRET_KEY`.
+The defaults work out-of-the-box with the bundled Docker Compose setup. You **must** set `OIDC_CLIENT_SECRET` (get it from the Keycloak client config) to log in; everything else has working defaults. Edit `.env` if you change ports, credentials, or want a different `SECRET_KEY`.
 
-| Variable        | Default                                                                  | Purpose                                  |
-| --------------- | ------------------------------------------------------------------------ | ---------------------------------------- |
-| `FLASK_APP`     | `wsgi.py`                                                                | Tells `flask` which app to load          |
-| `FLASK_DEBUG`   | `1`                                                                      | Enables auto-reload + debugger           |
-| `SECRET_KEY`    | `change-me-in-production`                                                | Session/CSRF signing key                 |
-| `DATABASE_URL`  | `postgresql+psycopg://postgres:postgres@localhost:5521/tkc_library`      | SQLAlchemy connection string            |
+| Variable                | Default                                                              | Purpose                                                                  |
+| ----------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `FLASK_APP`             | `wsgi.py`                                                            | Tells `flask` which app to load                                          |
+| `FLASK_DEBUG`           | `1`                                                                  | Enables auto-reload + debugger                                           |
+| `SECRET_KEY`            | `change-me-in-production`                                           | Session/CSRF signing key                                                 |
+| `DATABASE_URL`          | `postgresql+psycopg://postgres:postgres@localhost:5521/tkc_library` | SQLAlchemy connection string                                             |
+| `OIDC_ISSUER_URL`       | `https://login.keyholding.com/realms/keyholding`                    | Keycloak realm root; Authlib appends `/.well-known/openid-configuration` |
+| `OIDC_CLIENT_ID`        | `tkc-library`                                                       | OIDC client ID registered in Keycloak                                    |
+| `OIDC_CLIENT_SECRET`    | _(none — get from Keycloak)_                                        | OIDC client secret; **required for login**                               |
+| `S3_BUCKET`             | `tkc-librarian-uploads-services`                                   | Bucket for book photos                                                   |
+| `S3_ENDPOINT_URL`       | `http://localhost:9000`                                            | Points boto3 at local MinIO; leave **unset in prod** to use AWS S3       |
+| `S3_PUBLIC_BASE_URL`    | `http://localhost:9000/tkc-librarian-uploads-services`             | Browser-facing base URL for serving images                              |
+| `AWS_ACCESS_KEY_ID`     | `minioadmin`                                                       | MinIO/S3 access key (needed for uploads)                                 |
+| `AWS_SECRET_ACCESS_KEY` | `minioadmin`                                                       | MinIO/S3 secret key (needed for uploads)                                 |
 
-### 4. Start PostgreSQL
+> If `OIDC_ISSUER_URL` or `S3_PUBLIC_BASE_URL` are unset, the app still boots (handy for running `flask db …` commands): auth routes are disabled and book images render broken, rather than crashing the page.
+
+### 4. Start the backing services
 
 ```bash
 docker compose up -d
 ```
 
-This starts Postgres 16 on host port **5521** (container port 5432) with database `tkc_library`. Verify it's healthy:
+This starts:
+
+- **Postgres 16** on host port **5521** (container port 5432), database `tkc_library`.
+- **MinIO** (S3-compatible object store) on **9000** (S3 API) and **9001** (web console, login `minioadmin` / `minioadmin`).
+- A one-shot `minio-bootstrap` job that creates the `tkc-librarian-uploads-services` bucket with a public-read policy, then exits.
+
+Verify the long-running services are healthy:
 
 ```bash
 docker compose ps
 ```
 
-You should see `STATUS  Up ... (healthy)`.
+You should see `db` and `minio` as `Up ... (healthy)` (the `minio-bootstrap` job will show `Exited (0)` once the bucket is created).
 
-### 5. Initialize the database schema
+### 5. Apply the database schema
+
+The repo ships with committed migrations under `migrations/versions/`, so a fresh
+checkout only needs to **apply** them — do **not** run `flask db init` or
+`flask db migrate` (those scaffold the migrations dir and author new migrations
+respectively, neither of which you want here):
 
 ```bash
-flask db init                       # one-time: creates the migrations/ directory
-flask db migrate -m "initial"       # autogenerates a migration from the models
-flask db upgrade                    # applies it to the database
+flask db upgrade
 ```
+
+This brings your empty database up to the current schema and runs the seed
+migrations (initial books, admin user). The seed rows reference image files that
+live in the production bucket, so locally the book thumbnails will 404 until
+those images are uploaded to your MinIO bucket — the pages themselves render
+fine.
 
 ### 6. Run the development server
 
