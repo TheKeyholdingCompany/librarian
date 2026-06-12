@@ -48,20 +48,31 @@ def create_app(config_class=Config):
     # Authlib loads the realm's OIDC discovery doc on first use to pick up
     # endpoints and JWKS — no need to hard-code per-realm URLs.
     oauth.init_app(app)
-    oauth.register(
-        name="keycloak",
-        server_metadata_url=f"{app.config['OIDC_ISSUER_URL'].rstrip('/')}/.well-known/openid-configuration",
-        client_id=app.config["OIDC_CLIENT_ID"],
-        client_secret=app.config["OIDC_CLIENT_SECRET"],
-        # PKCE is required by the Keycloak client config (S256). Authlib
-        # doesn't auto-enable it from server metadata; opting in here makes
-        # the SDK generate the code_verifier and send code_challenge /
-        # code_challenge_method on the authorize redirect.
-        client_kwargs={
-            "scope": "openid email profile",
-            "code_challenge_method": "S256",
-        },
-    )
+    issuer_url = app.config["OIDC_ISSUER_URL"]
+    if issuer_url:
+        oauth.register(
+            name="keycloak",
+            server_metadata_url=f"{issuer_url.rstrip('/')}/.well-known/openid-configuration",
+            client_id=app.config["OIDC_CLIENT_ID"],
+            client_secret=app.config["OIDC_CLIENT_SECRET"],
+            # PKCE is required by the Keycloak client config (S256). Authlib
+            # doesn't auto-enable it from server metadata; opting in here makes
+            # the SDK generate the code_verifier and send code_challenge /
+            # code_challenge_method on the authorize redirect.
+            client_kwargs={
+                "scope": "openid email profile",
+                "code_challenge_method": "S256",
+            },
+        )
+    else:
+        # No OIDC config — e.g. running `flask db ...` or other CLI commands
+        # locally without auth set up. Skip client registration so the app
+        # factory doesn't crash; the /auth/* routes resolve `oauth.keycloak`
+        # lazily and will fail only if someone actually tries to log in.
+        app.logger.warning(
+            "OIDC_ISSUER_URL is unset — Keycloak auth disabled; /auth/* routes "
+            "will be unavailable until it is configured."
+        )
 
     from app.auth import bp as auth_bp
     from app.library import bp as library_bp
