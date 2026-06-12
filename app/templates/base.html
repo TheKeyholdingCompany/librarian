@@ -3,7 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %}TKC Library{% endblock %}</title>
+    <title>{% block title %}Librarian{% endblock %}</title>
+    {# Brand asset lives at docs/icon.svg; it's exposed under static/ via a
+       committed symlink in dev and a real copy baked in at Docker build time
+       (see Dockerfile). SVG favicons are honoured by all current browsers. #}
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='brand/logo.svg') }}" />
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='brand/logo.svg') }}" />
     <style>
       :root {
         --brand: #f17c14;
@@ -28,14 +33,22 @@
         justify-content: center;
         padding: 1rem;
       }
-      .container { max-width: 720px; margin: 0 auto; }
+      .container { max-width: 1080px; margin: 0 auto; }
       .card {
         background: white;
         border-radius: 10px;
         padding: 1.75rem 2rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       }
-      .brand { color: var(--brand); font-weight: 700; font-size: 1.1rem; }
+      .brand {
+        color: var(--brand);
+        font-weight: 700;
+        font-size: 1.1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .brand-logo { height: 1.6rem; width: auto; display: block; }
       .muted { color: var(--muted); }
       a { color: var(--brand); text-decoration: none; }
       a:hover { text-decoration: underline; }

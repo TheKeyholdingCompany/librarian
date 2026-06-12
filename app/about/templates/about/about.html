@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}About — TKC Library{% endblock %}
+{% block title %}About — Librarian{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -9,7 +9,7 @@
 
 {% block content %}
 <div class="container">
-  <div class="brand">TKC Library</div>
+  {% include "_brand.html" %}
   <div class="card">
     <h1>About</h1>
     <p>This is a digital library platform.</p>
