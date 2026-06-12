@@ -1,0 +1,7 @@
+{# Brand lockup: logo + wordmark. The logo source is docs/icon.svg, served
+   under static/ (symlink in dev, copied in at build time). Include this
+   instead of hardcoding the brand text so the mark stays consistent. #}
+<div class="brand">
+  <img class="brand-logo" src="{{ url_for('static', filename='brand/logo.svg') }}" alt="Librarian logo" />
+  <span>Librarian</span>
+</div>

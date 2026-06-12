@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}My Dashboard — TKC Library{% endblock %}
+{% block title %}My Dashboard — Librarian{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -21,7 +21,7 @@
 
 {% block content %}
 <div class="container">
-  <div class="brand">TKC Library</div>
+  {% include "_brand.html" %}
   <div class="card">
     <h1>My Borrower Dashboard</h1>
     <p>Here are the books you have borrowed and their current status.</p>

@@ -29,6 +29,15 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/* \
 COPY --chown=app:app . .
 RUN chmod +x entrypoint.sh
 
+# Materialise the brand asset as a real file. In dev, app/static/brand/logo.svg
+# is a symlink to docs/icon.svg (live editing); here we replace it with a copy
+# so the runtime image is self-contained and doesn't depend on symlink
+# resolution or docs/ surviving in the image. Idempotent: -f removes the
+# symlink (or stale copy) first.
+RUN rm -f app/static/brand/logo.svg \
+    && cp docs/icon.svg app/static/brand/logo.svg \
+    && chown app:app app/static/brand/logo.svg
+
 USER app
 
 ENV FLASK_APP=wsgi.py \

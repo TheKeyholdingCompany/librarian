@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}TKC Library{% endblock %}
+{% block title %}Librarian{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -272,7 +272,7 @@
 {% block content %}
 <div class="container">
   <header>
-    <div class="brand">TKC Library</div>
+    {% include "_brand.html" %}
     <div class="session">
       {% if session.get('username') %}
         Logged in as <strong>{{ session['username'] }}</strong> ({{ session['role'] }})
@@ -291,8 +291,7 @@
   </header>
 
   <div class="card">
-    <h1>TKC Library</h1>
-    <p class="muted">Flask + PostgreSQL is running.</p>
+    <h1>Librarian</h1>
 
     <form method="GET" action="{{ url_for('library.index') }}" class="search-form" role="search">
       <input

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Add Book - TKC Library{% endblock %}
+{% block title %}Add Book - Librarian{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -114,7 +114,7 @@
 {% block content %}
 <div class="container">
   <header>
-    <div class="brand">TKC Library</div>
+    {% include "_brand.html" %}
     <div class="session">
       {% if session.get('username') %}
         Logged in as <strong>{{ session['username'] }}</strong> ({{ session['role'] }})
