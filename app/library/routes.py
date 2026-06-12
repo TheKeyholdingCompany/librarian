@@ -248,12 +248,22 @@ def add_book():
             photo_filename=form.photo_key.data or None,
         )
         db.session.add(book)
-        # The request flips to approved only once the book is actually saved;
-        # abandoning this form leaves it pending.
+        # Flip the request to approved only once the book is actually saved;
+        # abandoning this form leaves it pending. The UPDATE is guarded on
+        # status == "pending" so the transition is atomic at the DB level: if
+        # another admin decided this request between page load and submit, the
+        # WHERE matches no rows and we don't clobber their decision (the book is
+        # still saved either way).
         if book_request:
-            book_request.status = "approved"
-            book_request.reviewed_at = datetime.now(timezone.utc)
-            book_request.reviewed_by_user_id = session.get("user_id")
+            db.session.execute(
+                db.update(BookRequest)
+                .where(BookRequest.id == book_request.id, BookRequest.status == "pending")
+                .values(
+                    status="approved",
+                    reviewed_at=datetime.now(timezone.utc),
+                    reviewed_by_user_id=session.get("user_id"),
+                )
+            )
         db.session.commit()
         flash(f"Book '{book.name}' added successfully!", "success")
         return redirect(url_for("library.index"))
