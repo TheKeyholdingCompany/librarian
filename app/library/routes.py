@@ -5,9 +5,9 @@ from sqlalchemy.orm import selectinload
 
 from app.auth.decorators import login_required, admin_required
 from app.extensions import db
-from app.forms import BookForm
+from app.forms import BookForm, RequestBookForm
 from app.library import bp
-from app.models import Book, Borrow, User, Rating
+from app.models import Book, Borrow, User, Rating, BookRequest
 from app.storage import presign_put, UnsupportedImageType, ALLOWED_IMAGE_TYPES
 
 
@@ -80,6 +80,25 @@ def index():
         user_rating_data=user_rating_data,
         search_query=search_query,
     )
+
+
+@bp.route("/request", methods=["GET", "POST"])
+@login_required
+def request_book():
+    form = RequestBookForm()
+    if form.validate_on_submit():
+        book_request = BookRequest(
+            title=form.title.data,
+            author=form.author.data,
+            link=form.link.data,
+            requested_by_user_id=session.get("user_id"),
+            status="pending",
+        )
+        db.session.add(book_request)
+        db.session.commit()
+        flash("Thanks! Your book request has been submitted for review.", "success")
+        return redirect(url_for("library.index"))
+    return render_template("library/request_book.html", form=form)
 
 
 @bp.route("/<int:book_id>/favorite", methods=["POST"])
