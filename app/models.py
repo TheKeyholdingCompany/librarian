@@ -133,3 +133,29 @@ class Rating(db.Model):
         return f"<Rating {self.id} book_id={self.book_id} user_id={self.user_id} rating={self.rating}>"
 
     __table_args__ = (db.UniqueConstraint('book_id', 'user_id', name='unique_user_book_rating'),)
+
+
+class BookRequest(db.Model):
+    __tablename__ = "book_requests"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(120), nullable=False)
+    author = db.Column(db.String(120), nullable=False)
+    link = db.Column(db.String(500), nullable=False)
+    requested_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    status = db.Column(db.String(20), default="pending", nullable=False)  # pending | approved | rejected
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    reviewed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    reviewed_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    # Two FKs point at users.id, so SQLAlchemy needs explicit foreign_keys to
+    # tell the requester relationship apart from the reviewer one.
+    requester = db.relationship("User", foreign_keys=[requested_by_user_id])
+    reviewer = db.relationship("User", foreign_keys=[reviewed_by_user_id])
+
+    def __repr__(self):
+        return f"<BookRequest {self.id} {self.title!r} status={self.status}>"

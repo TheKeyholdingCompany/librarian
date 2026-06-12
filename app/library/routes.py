@@ -5,9 +5,9 @@ from sqlalchemy.orm import selectinload
 
 from app.auth.decorators import login_required, admin_required
 from app.extensions import db
-from app.forms import BookForm
+from app.forms import BookForm, RequestBookForm
 from app.library import bp
-from app.models import Book, Borrow, User, Rating
+from app.models import Book, Borrow, User, Rating, BookRequest
 from app.storage import presign_put, UnsupportedImageType, ALLOWED_IMAGE_TYPES
 
 
@@ -80,6 +80,25 @@ def index():
         user_rating_data=user_rating_data,
         search_query=search_query,
     )
+
+
+@bp.route("/request", methods=["GET", "POST"])
+@login_required
+def request_book():
+    form = RequestBookForm()
+    if form.validate_on_submit():
+        book_request = BookRequest(
+            title=form.title.data,
+            author=form.author.data,
+            link=form.link.data,
+            requested_by_user_id=session.get("user_id"),
+            status="pending",
+        )
+        db.session.add(book_request)
+        db.session.commit()
+        flash("Thanks! Your book request has been submitted for review.", "success")
+        return redirect(url_for("library.index"))
+    return render_template("library/request_book.html", form=form)
 
 
 @bp.route("/<int:book_id>/favorite", methods=["POST"])
@@ -211,6 +230,15 @@ def view_borrower_dashboard(user_id):
 @bp.route("/add", methods=["GET", "POST"])
 @admin_required
 def add_book():
+    # When reached via an admin "Approve" link the URL carries ?request_id=N.
+    # The form has no explicit action, so it posts back to this same URL with
+    # the query string intact — request_id survives the GET→POST round trip.
+    request_id = request.args.get("request_id", type=int)
+    book_request = db.session.get(BookRequest, request_id) if request_id else None
+    # Only honour a request that still exists and hasn't been decided yet.
+    if book_request and book_request.status != "pending":
+        book_request = None
+
     form = BookForm()
     form.submit.label.text = "Add Book"
     if form.validate_on_submit():
@@ -220,14 +248,38 @@ def add_book():
             photo_filename=form.photo_key.data or None,
         )
         db.session.add(book)
+        # Flip the request to approved only once the book is actually saved;
+        # abandoning this form leaves it pending. The UPDATE is guarded on
+        # status == "pending" so the transition is atomic at the DB level: if
+        # another admin decided this request between page load and submit, the
+        # WHERE matches no rows and we don't clobber their decision (the book is
+        # still saved either way).
+        if book_request:
+            db.session.execute(
+                db.update(BookRequest)
+                .where(BookRequest.id == book_request.id, BookRequest.status == "pending")
+                .values(
+                    status="approved",
+                    reviewed_at=datetime.now(timezone.utc),
+                    reviewed_by_user_id=session.get("user_id"),
+                )
+            )
         db.session.commit()
         flash(f"Book '{book.name}' added successfully!", "success")
         return redirect(url_for("library.index"))
+
+    # Prefill from the request on first render only — don't clobber what the
+    # admin typed if validation bounced the POST back.
+    if book_request and request.method == "GET":
+        form.name.data = book_request.title
+        form.description.data = f"By {book_request.author}\n{book_request.link}"
+
     return render_template(
         "library/add_book.html",
         form=form,
         form_title="Add a New Book",
         allowed_extensions=sorted(ALLOWED_IMAGE_TYPES.keys()),
+        book_request=book_request,
     )
 
 

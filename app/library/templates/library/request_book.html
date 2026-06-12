@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Request a Book — Librarian{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .brand { margin-bottom: 1.5rem; }
+  h1 { margin-top: 0; }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label { display: block; font-weight: 600; margin-bottom: 0.35rem; }
+  .form-control {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--text);
+    background: white;
+  }
+  .errors { color: #b3261e; font-size: 0.85rem; margin: 0.35rem 0 0; list-style: none; padding: 0; }
+  .submit-btn {
+    padding: 0.75rem 1.5rem;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .submit-btn:hover { background: var(--brand-dark); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  {% include "_brand.html" %}
+  <div class="card">
+    <h1>Request a Book</h1>
+    <p class="muted">Suggest a book for the library. An admin will review your request.</p>
+
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.title.label }}
+        {{ form.title(class="form-control") }}
+        {% if form.title.errors %}
+          <ul class="errors">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.author.label }}
+        {{ form.author(class="form-control") }}
+        {% if form.author.errors %}
+          <ul class="errors">{% for e in form.author.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.link.label }}
+        {{ form.link(class="form-control", placeholder="https://...") }}
+        {% if form.link.errors %}
+          <ul class="errors">{% for e in form.link.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+
+      {{ form.submit(class="submit-btn") }}
+      <a href="{{ url_for('library.index') }}" style="margin-left: 1rem;">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
