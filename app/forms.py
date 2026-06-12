@@ -31,3 +31,8 @@ class RequestBookForm(FlaskForm):
         ],
     )
     submit = SubmitField("Submit Request")
+
+
+class RejectRequestForm(FlaskForm):
+    """CSRF-only form for the admin 'Reject' action button (no input fields)."""
+    pass

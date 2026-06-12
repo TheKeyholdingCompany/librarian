@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 from app.admin import bp
 from app.auth import admin_required
 from app.extensions import db
+from app.forms import RejectRequestForm
 from app.models import Borrow, User, BookRequest
 
 
@@ -78,12 +79,17 @@ def book_requests():
     # the created_at-desc order is preserved within each status group.
     status_order = {"pending": 0, "approved": 1, "rejected": 2}
     requests = sorted(requests, key=lambda r: status_order.get(r.status, 3))
-    return render_template("admin/requests.html", requests=requests)
+    return render_template("admin/requests.html", requests=requests, reject_form=RejectRequestForm())
 
 
 @bp.route("/admin/requests/<int:request_id>/reject", methods=["POST"])
 @admin_required
 def reject_request(request_id):
+    form = RejectRequestForm()
+    if not form.validate_on_submit():
+        flash("Could not process that request. Please try again.", "error")
+        return redirect(url_for("admin.book_requests"))
+
     book_request = db.session.get(BookRequest, request_id)
     if not book_request:
         flash("Request not found.", "error")

@@ -69,8 +69,7 @@
             <div class="row-actions">
               <a class="btn btn-approve" href="{{ url_for('library.add_book', request_id=r.id) }}">Approve</a>
               <form method="POST" action="{{ url_for('admin.reject_request', request_id=r.id) }}">
-                {# Bare token: this template has no FlaskForm, but CSRF protection still applies. #}
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {{ reject_form.hidden_tag() }}
                 <button type="submit" class="btn btn-reject">Reject</button>
               </form>
             </div>
