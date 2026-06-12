@@ -21,6 +21,13 @@ class RequestBookForm(FlaskForm):
     author = StringField("Author", validators=[DataRequired(), Length(min=1, max=120)])
     link = StringField(
         "Link",
-        validators=[DataRequired(), URL(message="Enter a valid URL (including http:// or https://)."), Length(max=500)],
+        validators=[
+            DataRequired(),
+            URL(message="Enter a valid URL (including http:// or https://)."),
+            # URL() alone accepts any "scheme://" — including javascript:// — so
+            # pin the scheme to http(s) to block stored-XSS payloads in the link.
+            Regexp(r"^https?://", message="Link must start with http:// or https://."),
+            Length(max=500),
+        ],
     )
     submit = SubmitField("Submit Request")

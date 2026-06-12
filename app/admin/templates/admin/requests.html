@@ -55,7 +55,13 @@
         <tr>
           <td>{{ r.title }}</td>
           <td>{{ r.author }}</td>
-          <td><a href="{{ r.link }}" target="_blank" rel="noopener">link</a></td>
+          <td>
+            {% if r.link.startswith('http://') or r.link.startswith('https://') %}
+              <a href="{{ r.link }}" target="_blank" rel="noopener noreferrer">link</a>
+            {% else %}
+              <span class="muted">{{ r.link }}</span>
+            {% endif %}
+          </td>
           <td>{{ r.requester.username if r.requester else "—" }}</td>
           <td><span class="status {{ r.status }}">{{ r.status }}</span></td>
           <td>
