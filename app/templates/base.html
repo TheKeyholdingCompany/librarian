@@ -176,12 +176,12 @@
         </a>
         <nav class="site-nav">
           {% if session.get('username') %}
-            <span class="nav-user">{{ session['username'] }} <span>({{ session['role'] }})</span></span>
+            <span class="nav-user">{{ session['username'] }} <span>({{ session.get('role') }})</span></span>
             <a class="nav-btn" href="{{ url_for('library.dashboard') }}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
               Dashboard
             </a>
-            {% if session['role'] == 'admin' %}
+            {% if session.get('role') == 'admin' %}
               <a class="nav-btn" href="{{ url_for('admin.dashboard') }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6z"/></svg>
                 Admin
