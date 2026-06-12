@@ -1,4 +1,8 @@
-# tkc-library
+<p align="center">
+    <img src="./docs/icon.svg" alt="Librarian Logo" width="150"/>
+</p>
+
+<h1 align="center">Librarian</h1>
 
 A Flask web application backed by PostgreSQL.
 
