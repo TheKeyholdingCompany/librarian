@@ -135,7 +135,17 @@
 
   <div class="card">
     <h1>{{ form_title or 'Add a New Book' }}</h1>
-    
+
+    {% if book_request %}
+    <p class="muted" style="margin-top: 0;">
+      Creating a book from a request by <strong>{{ book_request.requester.username if book_request.requester else "a borrower" }}</strong>.
+      {% if book_request.link.startswith('http://') or book_request.link.startswith('https://') %}
+        Original link: <a href="{{ book_request.link }}" target="_blank" rel="noopener noreferrer">{{ book_request.link }}</a>
+      {% else %}
+        Original link: <span>{{ book_request.link }}</span>
+      {% endif %}
+    </p>
+    {% endif %}
     <form method="POST" novalidate id="add-book-form">
       {{ form.hidden_tag() }}
 

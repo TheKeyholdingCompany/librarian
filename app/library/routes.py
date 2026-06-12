@@ -230,6 +230,15 @@ def view_borrower_dashboard(user_id):
 @bp.route("/add", methods=["GET", "POST"])
 @admin_required
 def add_book():
+    # When reached via an admin "Approve" link the URL carries ?request_id=N.
+    # The form has no explicit action, so it posts back to this same URL with
+    # the query string intact — request_id survives the GET→POST round trip.
+    request_id = request.args.get("request_id", type=int)
+    book_request = db.session.get(BookRequest, request_id) if request_id else None
+    # Only honour a request that still exists and hasn't been decided yet.
+    if book_request and book_request.status != "pending":
+        book_request = None
+
     form = BookForm()
     form.submit.label.text = "Add Book"
     if form.validate_on_submit():
@@ -239,14 +248,28 @@ def add_book():
             photo_filename=form.photo_key.data or None,
         )
         db.session.add(book)
+        # The request flips to approved only once the book is actually saved;
+        # abandoning this form leaves it pending.
+        if book_request:
+            book_request.status = "approved"
+            book_request.reviewed_at = datetime.now(timezone.utc)
+            book_request.reviewed_by_user_id = session.get("user_id")
         db.session.commit()
         flash(f"Book '{book.name}' added successfully!", "success")
         return redirect(url_for("library.index"))
+
+    # Prefill from the request on first render only — don't clobber what the
+    # admin typed if validation bounced the POST back.
+    if book_request and request.method == "GET":
+        form.name.data = book_request.title
+        form.description.data = f"By {book_request.author}\n{book_request.link}"
+
     return render_template(
         "library/add_book.html",
         form=form,
         form_title="Add a New Book",
         allowed_extensions=sorted(ALLOWED_IMAGE_TYPES.keys()),
+        book_request=book_request,
     )
 
 
