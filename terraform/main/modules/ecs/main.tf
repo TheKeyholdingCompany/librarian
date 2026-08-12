@@ -148,6 +148,7 @@ resource "aws_ecs_service" "api" {
   task_definition = aws_ecs_task_definition.api.arn
   desired_count   = 2
   launch_type     = "FARGATE"
+  propagate_tags  = "SERVICE"
 
   # 50/200: a deploy can run two old + two new tasks, traffic shifts only
   # after the new ones pass /health. Zero-downtime at the cost of one
