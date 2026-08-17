@@ -1,6 +1,6 @@
 # ── Stage 1: Build wheels ──────────────────────────────────
 # Wheels-only deps stage means the runtime image never sees gcc / build-essential.
-FROM python:3.12-slim AS deps
+FROM python:3.14-slim AS deps
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip wheel --no-cache-dir --wheel-dir=/wheels -r requirements.txt gunicorn
 
 # ── Stage 2: Runtime ──────────────────────────────────────
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 WORKDIR /app
 
 # psycopg[binary] bundles libpq, but installing libpq5 is cheap insurance if
