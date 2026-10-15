@@ -38,7 +38,7 @@ jobs:
       infra: ${{ steps.filter.outputs.infra }}
       app: ${{ steps.filter.outputs.app }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -66,7 +66,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check if bootstrap is needed
         id: check
@@ -101,7 +101,7 @@ jobs:
       ecs_cluster: ${{ steps.outputs.outputs.ecs_cluster }}
       ecs_service: ${{ steps.outputs.outputs.ecs_service }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v4
         with:
           terraform_wrapper: false
@@ -138,7 +138,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       COMMIT_SHA: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # ECR repo URL is normally produced by the infra job, but if only
       # app/** changed and the infra job was skipped, fall back to a
