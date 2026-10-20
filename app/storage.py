@@ -94,7 +94,7 @@ def public_url(key: str) -> str:
         return ""
     base = current_app.config["S3_PUBLIC_BASE_URL"]
     if not base:
-        # No public bucket configured — e.g. local dev without the S3/MinIO
+        # No public bucket configured — e.g. local dev without the S3
         # env vars set. Return "" so templates render a broken <img> rather
         # than 500ing the whole page on a missing optional config.
         return ""
