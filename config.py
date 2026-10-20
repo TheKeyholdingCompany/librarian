@@ -10,9 +10,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # S3 image uploads. In prod, these come from the ECS task definition
-    # (see terraform/main/modules/ecs). In local dev they point at MinIO via
+    # (see terraform/main/modules/ecs). In local dev they point at RustFS via
     # docker-compose — S3_ENDPOINT_URL is the toggle that swaps boto3 between
-    # AWS and MinIO with no code changes.
+    # AWS and the local store with no code changes.
     S3_BUCKET = os.environ.get("S3_BUCKET")
     S3_REGION = os.environ.get("AWS_REGION", "eu-west-1")
     S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL")  # unset in prod

@@ -12,7 +12,7 @@ Usage::
         python scripts/migrate_uploads_to_s3.py
 
 Optional env:
-    S3_ENDPOINT_URL   point at MinIO/LocalStack instead of AWS
+    S3_ENDPOINT_URL   point at RustFS/LocalStack instead of AWS
     DRY_RUN=1         report what would happen without writing
 """
 

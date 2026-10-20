@@ -61,10 +61,10 @@ The defaults work out-of-the-box with the bundled Docker Compose setup. You **mu
 | `OIDC_CLIENT_ID`        | `tkc-library`                                                       | OIDC client ID registered in Keycloak                                    |
 | `OIDC_CLIENT_SECRET`    | _(none — get from Keycloak)_                                        | OIDC client secret; **required for login**                               |
 | `S3_BUCKET`             | `tkc-librarian-uploads-services`                                   | Bucket for book photos                                                   |
-| `S3_ENDPOINT_URL`       | `http://localhost:9000`                                            | Points boto3 at local MinIO; leave **unset in prod** to use AWS S3       |
+| `S3_ENDPOINT_URL`       | `http://localhost:9000`                                            | Points boto3 at local RustFS; leave **unset in prod** to use AWS S3      |
 | `S3_PUBLIC_BASE_URL`    | `http://localhost:9000/tkc-librarian-uploads-services`             | Browser-facing base URL for serving images                              |
-| `AWS_ACCESS_KEY_ID`     | `minioadmin`                                                       | MinIO/S3 access key (needed for uploads)                                 |
-| `AWS_SECRET_ACCESS_KEY` | `minioadmin`                                                       | MinIO/S3 secret key (needed for uploads)                                 |
+| `AWS_ACCESS_KEY_ID`     | `rustfsadmin`                                                      | RustFS/S3 access key (needed for uploads)                                |
+| `AWS_SECRET_ACCESS_KEY` | `rustfsadmin`                                                      | RustFS/S3 secret key (needed for uploads)                                |
 
 > If `OIDC_ISSUER_URL` or `S3_PUBLIC_BASE_URL` are unset, the app still boots (handy for running `flask db …` commands): auth routes are disabled and book images render broken, rather than crashing the page.
 
@@ -77,16 +77,31 @@ docker compose up -d
 This starts:
 
 - **Postgres 16** on host port **5521** (container port 5432), database `tkc_library`.
-- **MinIO** (S3-compatible object store) on **9000** (S3 API) and **9001** (web console, login `minioadmin` / `minioadmin`).
-- A one-shot `minio-bootstrap` job that creates the `tkc-librarian-uploads-services` bucket with a public-read policy, then exits.
+- **RustFS** (S3-compatible object store) on **9000** (S3 API) and **9001** (web console at `/rustfs/console/`, login `rustfsadmin` / `rustfsadmin`).
 
-Verify the long-running services are healthy:
+Verify both are healthy:
 
 ```bash
 docker compose ps
 ```
 
-You should see `db` and `minio` as `Up ... (healthy)` (the `minio-bootstrap` job will show `Exited (0)` once the bucket is created).
+You should see `db` and `rustfs` as `Up ... (healthy)`.
+
+Then create the bucket:
+
+```bash
+python scripts/ensure_uploads_bucket.py
+```
+
+That creates `tkc-librarian-uploads-services` with the same two rules the prod
+bucket gets from Terraform: anonymous GET on `books/*`, which is how the browser
+loads every cover, and a CORS rule, without which a presigned upload PUT stores
+the image and still fails in the browser. MinIO wildcarded CORS and the old
+`minio-bootstrap` sidecar only had to set the read policy; RustFS does neither
+on its own. Re-run it any time — it is idempotent.
+
+Coming from the MinIO stack? Run `docker compose up -d --remove-orphans` once,
+or the old `minio` container keeps port 9000 and RustFS cannot start.
 
 ### 5. Apply the database schema
 
@@ -102,7 +117,7 @@ flask db upgrade
 This brings your empty database up to the current schema and runs the seed
 migrations (initial books, admin user). The seed rows reference image files that
 live in the production bucket, so locally the book thumbnails will 404 until
-those images are uploaded to your MinIO bucket — the pages themselves render
+those images are uploaded to your local bucket — the pages themselves render
 fine.
 
 ### 6. Run the development server
